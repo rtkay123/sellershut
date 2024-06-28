@@ -15,7 +15,6 @@ default = []
 categories = ["tonic"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:tonic-types"]
-rpc-categories-full = ["rpc-client-categories", "rpc-server-categories"]
 serde = ["dep:serde", "serde/derive"]
 tonic = ["dep:tonic", "dep:prost"]
 
