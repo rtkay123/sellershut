@@ -45,11 +45,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         config
             .server_mod_attribute(
                 &package,
-                format!("#[cfg(feature = \"rpc-server-{package}\")]"),
+                format!("#[cfg(feature = \"rpc-server-{package}\")] #[cfg_attr(docsrs, doc(cfg(feature = \"rpc-server-{package}\")))]"),
             )
             .client_mod_attribute(
                 &package,
-                format!("#[cfg(feature = \"rpc-client-{package}\")]"),
+                format!("#[cfg(feature = \"rpc-client-{package}\")] #[cfg_attr(docsrs, doc(cfg(feature = \"rpc-client-{package}\")))]"),
             )
             .file_descriptor_set_path(out_dir.join(format!("{package}_descriptor.bin")))
             .compile(&[path], &includes)?;

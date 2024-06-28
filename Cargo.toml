@@ -40,3 +40,7 @@ required-features = ["rpc-client-categories"]
 name = "serde"
 path = "examples/serde.rs"
 required-features = ["categories", "serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
