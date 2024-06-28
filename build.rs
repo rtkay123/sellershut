@@ -51,6 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &package,
                 format!("#[cfg(feature = \"rpc-client-{package}\")]"),
             )
+            .file_descriptor_set_path(out_dir.join(format!("{package}_descriptor.bin")))
             .compile(&[path], &includes)?;
     }
 
