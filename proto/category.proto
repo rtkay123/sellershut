@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package categories;
+
+import "proto/common.proto";
+
+
+// The Category Query service
+service QueryCategories {
+  // gets all categories
+  rpc Categories (common.Paginate) returns (Connection) {}
+  rpc CategoryById (common.SearchQuery) returns (Category) {}
+  rpc SubCategories (common.SearchQueryOptional) returns (Connection) {}
+  rpc Search (common.SearchQuery) returns (Connection) {}
+}
+
+// Category Mutation Service
+service MutateCategories {
+  // Create a category
+  rpc Create (Category) returns (Category) {}
+  // Update a category
+  rpc Update (Category) returns (Category) {}
+  // Delete a category
+  rpc Delete (common.SearchQuery) returns (Category) {}
+}
+
+// A category
+message Category {
+  string id = 1; // A unique identifier, it should be an 21 character ID
+  string name = 2; // Human readable name
+  repeated string sub_categories = 3; // A list of sub categories of this current category
+  optional string image_url = 4; // An optional image denoting this category
+  optional string parent_id = 5; // The direct parent of this category (if applicable)
+  int64 created_at = 6; // Timestamp (millisecond precision) indicating when this category was created
+  int64 updated_at = 7; // Timestamp (millisecond precision) indicating when this category was last updated
+}
+
+// A response node
+message Node {
+    // A category
+    Category node = 1;
+    // Pagination cursor
+    string cursor = 2;
+}
+
+// Connection contains a list of Node objects and the pagination information.
+message Connection {
+  // The list of nodes in the current page.
+  repeated Node edges = 1;
+  // Information about the pagination state.
+  common.PageInfo pageInfo = 2;
+}

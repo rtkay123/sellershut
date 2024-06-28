@@ -5,3 +5,19 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+prost = { version = "0.12.6", optional = true }
+serde = { version = "1.0.203", optional = true }
+tonic = { version = "0.11.0", optional = true }
+tonic-types = { version = "0.11.0", optional = true }
+
+[features]
+default = ["rpc-categories-full"]
+categories = ["tonic"]
+rpc-client-categories = ["categories", "dep:tonic-types"]
+rpc-server-categories = ["categories", "dep:tonic-types"]
+rpc-categories-full = ["rpc-client-categories", "rpc-server-categories"]
+serde = ["dep:serde"]
+tonic = ["dep:tonic", "dep:prost"]
+
+[build-dependencies]
+tonic-build = "0.11.0"

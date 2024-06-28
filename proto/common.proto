@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package common;
+
+// An empty message
+message Empty {}
+
+// Pagination
+message Paginate {
+    // Cursor indicating the position after which results should be fetched.
+    optional string after = 1;
+    
+    // Cursor indicating the position before which results should be fetched.
+    optional string before = 2;
+    
+    // Maximum number of results to fetch starting after the "after" cursor.
+    optional int32 first = 3;
+    
+    // Maximum number of results to fetch ending before the "before" cursor.
+    optional int32 last = 4;
+}
+
+// A message holding an optional string, for string based searching
+message SearchQueryOptional {
+  optional string query = 1; // A parameter sent in with requests
+  // Pagination
+  Paginate pagination = 2;
+}
+
+// A message holding a string, for string based searching
+message SearchQuery {
+  string query = 1; // A parameter sent in with requests
+  // Pagination
+  Paginate pagination = 2;
+}
+
+// PageInfo represents information about the pagination state.
+message PageInfo {
+  // Whether there is a next page available.
+  bool hasNextPage = 1;
+  // Whether there is a previous page available.
+  bool hasPreviousPage = 2;
+  // The cursor marking the start of the current page.
+  optional string startCursor = 3;
+  // The cursor marking the end of the current page.
+  optional string endCursor = 4;
+}
