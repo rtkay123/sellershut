@@ -16,13 +16,14 @@ categories = ["tonic"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:tonic-types"]
 rpc-categories-full = ["rpc-client-categories", "rpc-server-categories"]
-serde = ["dep:serde"]
+serde = ["dep:serde", "serde/derive"]
 tonic = ["dep:tonic", "dep:prost"]
 
 [build-dependencies]
 tonic-build = "0.11.0"
 
 [dev-dependencies]
+serde_json = "1.0.118"
 tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 
 [[example]]
@@ -34,3 +35,8 @@ required-features = ["rpc-server-categories"]
 name = "grpc-client"
 path = "examples/grpc/client.rs"
 required-features = ["rpc-client-categories"]
+
+[[example]]
+name = "serde"
+path = "examples/serde.rs"
+required-features = ["categories", "serde"]
