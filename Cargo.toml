@@ -11,7 +11,7 @@ tonic = { version = "0.11.0", optional = true }
 tonic-types = { version = "0.11.0", optional = true }
 
 [features]
-default = ["rpc-categories-full"]
+default = []
 categories = ["tonic"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:tonic-types"]
@@ -21,3 +21,16 @@ tonic = ["dep:tonic", "dep:prost"]
 
 [build-dependencies]
 tonic-build = "0.11.0"
+
+[dev-dependencies]
+tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
+
+[[example]]
+name = "grpc-server"
+path = "examples/grpc/server.rs"
+required-features = ["rpc-server-categories"]
+
+[[example]]
+name = "grpc-client"
+path = "examples/grpc/client.rs"
+required-features = ["rpc-client-categories"]
