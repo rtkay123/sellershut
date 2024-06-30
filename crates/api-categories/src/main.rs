@@ -1,24 +1,21 @@
+mod routes;
 mod state;
 
-use axum::{response::Html, routing::get, Router};
+use routes::router;
+use state::ApiState;
+use tokio::net::TcpListener;
 use tracing::info;
 
 #[tokio::main]
-async fn main() {
-    sellershut_services::telemetry::Handle::initialise("info");
+async fn main() -> anyhow::Result<()> {
+    let state = ApiState::initialise().await?;
 
-    // build our application with a route
-    let app = Router::new().route("/", get(handler));
+    let listener = TcpListener::bind(&state.config.listen_address).await?;
 
-    // run it
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
+    let router = router(state);
 
-    info!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
-}
+    info!("listening on {}", listener.local_addr()?);
+    axum::serve(listener, router).await?;
 
-async fn handler() -> Html<&'static str> {
-    Html("<h1>Hello, World!</h1>")
+    Ok(())
 }
