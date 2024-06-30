@@ -12,7 +12,8 @@
 /// Categories API utilities
 pub mod categories;
 
-#[cfg(feature = "tonic")]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "categories"))))]
+//#[cfg(all(feature = "tonic", any(feature = "categories")))] : more entities should come in `any`
+#[cfg(all(feature = "tonic", feature = "categories"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "tonic", feature = "categories"))))]
 /// Resuable utilities
 pub mod common;
