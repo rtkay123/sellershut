@@ -1,0 +1,8 @@
+[package]
+name = "serde-serialisation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sellershut-core = { workspace = true, features = ["categories", "serde"] }
+serde_json.workspace = true

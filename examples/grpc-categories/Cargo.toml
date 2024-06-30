@@ -1,0 +1,18 @@
+[package]
+name = "grpc-categories"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "example-grpc-categories-server"
+path = "src/grpc/categories/server.rs"
+
+[[bin]]
+name = "example-grpc-categories-client"
+path = "src/grpc/categories/client.rs"
+
+[dependencies]
+sellershut-core = { path = "../../crates/sellershut-core", features = ["rpc-client-categories", "rpc-server-categories"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true
