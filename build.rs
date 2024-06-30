@@ -42,6 +42,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "#[derive(serde::Serialize, serde::Deserialize)] #[serde(rename_all = \"snake_case\")]",
         );
 
+        #[cfg(all(feature = "sqlx", feature = "categories"))]
+        let config = config.type_attribute(".categories.Category", "#[derive(sqlx::FromRow)]");
+
         config
             .server_mod_attribute(
                 &package,
