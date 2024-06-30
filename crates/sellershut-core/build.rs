@@ -45,6 +45,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(all(feature = "sqlx", feature = "categories"))]
         let config = config.type_attribute(".categories.Category", "#[derive(sqlx::FromRow)]");
 
+        #[cfg(all(feature = "async-graphql", feature = "categories"))]
+        let config = config
+            .type_attribute(
+                ".categories.Category",
+                "#[derive(async_graphql::InputObject)] #[graphql(input_name = \"CategoryInput\")]",
+            )
+            .field_attribute(".categories.Category.id", "#[graphql(skip_input)]");
+
         config
             .server_mod_attribute(
                 &package,

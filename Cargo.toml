@@ -5,7 +5,7 @@ resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1.0.86"
-async-graphql = "7.0.6"
+async-graphql = { version = "7.0.6", default-features = false }
 async-graphql-axum = "7.0.6"
 axum = "0.7.5"
 dotenvy = "0.15.7"
