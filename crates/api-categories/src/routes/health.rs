@@ -1,6 +1,6 @@
-use axum::Json;
-use serde_json::{json, Value};
+use axum::{response::IntoResponse, Json};
+use serde_json::json;
 
-pub async fn health_check() -> Json<Value> {
+pub async fn health_check() -> impl IntoResponse {
     Json(json!({ "status": "ok" }))
 }

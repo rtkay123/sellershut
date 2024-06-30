@@ -1,9 +1,10 @@
+pub mod config;
+mod impls;
+
 use std::path::Path;
 
 use config::{Config, Configuration};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-
-mod config;
 
 #[derive(Clone)]
 pub struct ApiState {

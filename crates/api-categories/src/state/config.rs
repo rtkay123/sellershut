@@ -23,7 +23,7 @@ pub struct Configuration {
     pub db_pool_max_size: u32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Copy, Clone)]
 pub enum Environment {
     Development,
     Production,
@@ -32,7 +32,6 @@ pub enum Environment {
 impl Configuration {
     /// Creates a new configuration from environment variables.
     pub fn new() -> Config {
-
         let env = env_var("APP_ENVIRONMENT")
             .parse::<Environment>()
             .expect("Unable to parse the value of the APP_ENVIRONMENT environment variable. Please make sure it is either \"development\" or \"production\".");
