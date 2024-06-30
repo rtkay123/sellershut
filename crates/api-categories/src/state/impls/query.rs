@@ -2,24 +2,43 @@ use sellershut_core::{
     categories::{query_categories_server::QueryCategories, Category, Connection},
     common::{Paginate, SearchQuery, SearchQueryOptional},
 };
+use tracing::instrument;
 
-use crate::state::ApiState;
+use crate::{
+    api::entity,
+    state::{impls::map_err, ApiState},
+};
 
 #[tonic::async_trait]
 impl QueryCategories for ApiState {
     #[doc = " gets all categories"]
     #[must_use]
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
+    #[instrument(skip(self), err(Debug))]
     async fn categories(
         &self,
         request: tonic::Request<Paginate>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
+        let request = request.into_inner();
+        let db_conn = &self.db_pool;
+
+        let res = sqlx::query_as!(entity::Category, "select * FROM category")
+            .fetch_all(db_conn)
+            .await
+            .map_err(map_err)?;
+
+        let conn = Connection {
+            edges: todo!(),
+            page_info: todo!(),
+        };
+
         todo!()
     }
 
     #[doc = " get category by a with id"]
     #[must_use]
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
+    #[instrument(skip(self), err(Debug))]
     async fn category_by_id(
         &self,
         request: tonic::Request<SearchQuery>,
@@ -30,6 +49,7 @@ impl QueryCategories for ApiState {
     #[doc = " get subcategories"]
     #[must_use]
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
+    #[instrument(skip(self), err(Debug))]
     async fn sub_categories(
         &self,
         request: tonic::Request<SearchQueryOptional>,
@@ -40,6 +60,7 @@ impl QueryCategories for ApiState {
     #[doc = " search categories"]
     #[must_use]
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
+    #[instrument(skip(self), err(Debug))]
     async fn search(
         &self,
         request: tonic::Request<SearchQuery>,

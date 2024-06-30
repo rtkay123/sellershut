@@ -1,3 +1,4 @@
+pub mod entity;
 pub mod query;
 
 use async_graphql::{EmptyMutation, EmptySubscription, Schema};

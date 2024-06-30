@@ -1,12 +1,9 @@
 use async_graphql::{Context, MergedObject, Object};
-use sellershut_core::{
-    categories::{query_categories_server::QueryCategories, Category},
-    common::Paginate,
-};
+use sellershut_core::{categories::query_categories_server::QueryCategories, common::Paginate};
 use tonic::IntoRequest;
 use tracing::instrument;
 
-use crate::state::ApiState;
+use crate::{api::entity::Category, state::ApiState};
 
 #[derive(Default, Debug, MergedObject)]
 pub struct Query(GraphqlQuery);

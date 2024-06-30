@@ -1732,11 +1732,9 @@ dependencies = [
 name = "sellershut-core"
 version = "0.1.0"
 dependencies = [
- "async-graphql",
  "prost",
  "serde",
  "serde_json",
- "sqlx",
  "tokio",
  "tonic",
  "tonic-build",

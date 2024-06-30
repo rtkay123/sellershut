@@ -10,11 +10,11 @@ axum = { workspace = true, features = ["macros", "http2", "ws"] }
 async-graphql = { workspace = true, features = ["playground"] }
 async-graphql-axum.workspace = true
 dotenvy.workspace = true
-sellershut-core = { workspace = true, features = ["async-graphql", "rpc-client-categories", "rpc-server-categories", "serde", "sqlx"] }
+sellershut-core = { workspace = true, features = ["rpc-client-categories", "rpc-server-categories", "serde"] }
 sellershut-services = { workspace = true, features = ["telemetry"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-sqlx = { workspace = true, features = ["migrate", "postgres", "runtime-tokio", "tls-rustls"] }
+sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "tls-rustls"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tracing.workspace = true
