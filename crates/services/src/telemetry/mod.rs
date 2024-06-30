@@ -6,11 +6,11 @@ pub struct Handle {}
 
 impl Handle {
     /// Initialise logging
-    pub fn initialise(log_level: &str) -> Self {
+    pub fn initialise() -> Self {
         tracing_subscriber::registry()
             .with(
                 tracing_subscriber::EnvFilter::try_from_default_env()
-                    .unwrap_or_else(|_| log_level.into()),
+                    .unwrap_or_else(|_| "info".into()),
             )
             .with(tracing_subscriber::fmt::layer())
             .init();
