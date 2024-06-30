@@ -346,16 +346,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
-name = "examples"
-version = "0.1.0"
-dependencies = [
- "sellershut-core",
- "serde_json",
- "tokio",
- "tonic",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -491,6 +481,15 @@ name = "gimli"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40ecd4077b5ae9fd2e9e169b102c6c330d0605168eb0e8bf79952b256dbefffd"
+
+[[package]]
+name = "grpc-categories"
+version = "0.1.0"
+dependencies = [
+ "sellershut-core",
+ "tokio",
+ "tonic",
+]
 
 [[package]]
 name = "h2"
@@ -1335,6 +1334,8 @@ name = "sellershut-api-categories"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "sellershut-core",
+ "sellershut-services",
  "sqlx",
  "tokio",
  "tracing",
@@ -1356,12 +1357,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "sellershut-services"
+version = "0.1.0"
+
+[[package]]
 name = "serde"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-serialisation"
+version = "0.1.0"
+dependencies = [
+ "sellershut-core",
+ "serde_json",
 ]
 
 [[package]]

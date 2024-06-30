@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow.workspace = true
+sellershut-core = { workspace = true, features = ["rpc-client-categories", "rpc-server-categories", "serde", "sqlx"] }
+sellershut-services.workspace = true
 sqlx = { workspace = true, features = ["migrate", "postgres", "runtime-tokio", "tls-rustls"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing.workspace = true
