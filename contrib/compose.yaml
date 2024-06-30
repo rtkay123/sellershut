@@ -12,7 +12,7 @@ services:
     networks:
       - sellershut
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres:/data/postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -24,4 +24,4 @@ networks:
   sellershut:
 
 volumes:
-  postgres_data:
+  postgres:
