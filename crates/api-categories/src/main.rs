@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
     let env = state.config.env;
 
     // derive clone ok
-    let schema = ApiSchemaBuilder::new(state.clone());
+    let schema = ApiSchemaBuilder::build(state.clone());
 
     let listener = TcpListener::bind(&state.config.listen_address).await?;
 
@@ -25,3 +25,6 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

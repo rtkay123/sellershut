@@ -9,11 +9,11 @@ pub mod query;
 pub struct ApiSchemaBuilder {}
 
 impl ApiSchemaBuilder {
-    pub fn new<T>(data: T) -> Schema<CategoryQuery, EmptyMutation, EmptySubscription>
+    pub fn build<T>(data: T) -> Schema<CategoryQuery, EmptyMutation, EmptySubscription>
     where
         T: QueryCategories + MutateCategories,
     {
-        Schema::build(CategoryQuery::default(), EmptyMutation, EmptySubscription)
+        Schema::build(CategoryQuery, EmptyMutation, EmptySubscription)
             .data(data)
             .finish()
     }

@@ -17,3 +17,6 @@ sqlx = { workspace = true, features = ["migrate", "postgres", "runtime-tokio", "
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+tower.workspace = true

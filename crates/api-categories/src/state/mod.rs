@@ -29,6 +29,7 @@ impl ApiState {
             .connect(&config.db_dsn)
             .await?;
 
+        #[cfg(not(test))]
         sqlx::migrate!("./migrations").run(&pool).await?;
 
         Ok(Self {

@@ -1790,6 +1790,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tonic",
+ "tower",
  "tracing",
 ]
 
