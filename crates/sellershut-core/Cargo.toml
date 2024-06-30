@@ -5,21 +5,17 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-async-graphql = { workspace = true, optional = true, default-features = false }
 prost = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-sqlx = { workspace = true, optional = true, default-features = false }
 tonic = { workspace = true, optional = true }
 tonic-types = { workspace = true, optional = true }
 
 [features]
 default = []
-async-graphql = ["dep:async-graphql"]
 categories = ["tonic"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:tonic-types"]
 serde = ["dep:serde", "serde/derive"]
-sqlx = ["dep:sqlx", "sqlx/macros"]
 tonic = ["dep:tonic", "dep:prost"]
 
 [build-dependencies]
