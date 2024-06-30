@@ -19,7 +19,7 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<Paginate>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
-        let request = request.into_inner();
+        let pagination = request.into_inner();
         let db_conn = &self.db_pool;
 
         let res = sqlx::query_as!(entity::Category, "select * FROM category")
