@@ -6,6 +6,7 @@ resolver = "2"
 [workspace.dependencies]
 anyhow = "1.0.86"
 axum = "0.7.5"
+dotenvy = "0.15.7"
 prost = "0.12.6"
 sellershut-core = { path = "crates/sellershut-core" }
 sellershut-services = { path = "crates/services" }

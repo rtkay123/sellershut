@@ -1506,8 +1506,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
+ "dotenvy",
  "sellershut-core",
  "sellershut-services",
+ "serde",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",
