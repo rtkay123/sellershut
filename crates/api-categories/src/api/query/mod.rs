@@ -1,5 +1,9 @@
 use async_graphql::{Context, MergedObject, Object};
-use sellershut_core::categories::Category;
+use sellershut_core::{
+    categories::{query_categories_server::QueryCategories, Category},
+    common::Paginate,
+};
+use tonic::IntoRequest;
 use tracing::instrument;
 
 use crate::state::ApiState;
@@ -16,10 +20,44 @@ impl GraphqlQuery {
     async fn categories(
         &self,
         ctx: &Context<'_>,
-        val: Category,
+        #[graphql(validator(min_length = 1))] after: Option<String>,
+        #[graphql(validator(min_length = 1))] before: Option<String>,
+        #[graphql(validator(minimum = 1, maximum = 100))] first: Option<i32>,
+        #[graphql(validator(minimum = 1, maximum = 100))] last: Option<i32>,
     ) -> async_graphql::Result<Vec<Category>> {
+        let pagination = Params::parse(after, before, first, last)?;
+
         let service = ctx.data::<ApiState>()?;
 
+        service.categories(pagination.into_request()).await?;
+
         Ok(vec![])
+    }
+}
+
+/// Relay-compliant connection parameters to page results by cursor/page size
+pub struct Params;
+
+impl Params {
+    pub fn parse(
+        after: Option<String>,
+        before: Option<String>,
+        first: Option<i32>,
+        last: Option<i32>,
+    ) -> async_graphql::Result<Paginate> {
+        if last.is_none() && first.is_none() {
+            return Err("One of 'first' or 'last' should be provided".into());
+        }
+
+        if after.is_some() && before.is_some() {
+            return Err("Only one or none of 'after' or 'before' should be provided".into());
+        }
+
+        Ok(Paginate {
+            after,
+            before,
+            first,
+            last,
+        })
     }
 }
