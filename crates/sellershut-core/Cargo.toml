@@ -1,0 +1,32 @@
+[package]
+name = "sellershut-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+prost = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+sqlx = { workspace = true, optional = true, default-features = false }
+tonic = { workspace = true, optional = true }
+tonic-types = { workspace = true, optional = true }
+
+[features]
+default = []
+categories = ["tonic"]
+rpc-client-categories = ["categories", "dep:tonic-types"]
+rpc-server-categories = ["categories", "dep:tonic-types"]
+serde = ["dep:serde", "serde/derive"]
+sqlx = ["dep:sqlx", "sqlx/macros"]
+tonic = ["dep:tonic", "dep:prost"]
+
+[build-dependencies]
+tonic-build.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

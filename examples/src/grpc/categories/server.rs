@@ -1,6 +1,5 @@
 use sellershut_core::{
     categories::{
-        query_categories_client::QueryCategoriesClient,
         query_categories_server::{QueryCategories, QueryCategoriesServer},
         Category, Connection,
     },
