@@ -1,5 +1,5 @@
 use sellershut_core::{
-    categories::{query_categories_server::QueryCategories, Category, Connection},
+    categories::{query_categories_server::QueryCategories, Category, Connection, Node},
     common::{Paginate, SearchQuery, SearchQueryOptional},
 };
 use tracing::instrument;
@@ -27,12 +27,22 @@ impl QueryCategories for ApiState {
             .await
             .map_err(map_err)?;
 
+        let len = res.len();
+
+        let nodes = res
+            .into_iter()
+            .map(|f| Node {
+                node: Some(Category::from(f)),
+                cursor: String::default(),
+            })
+            .collect();
+
         let conn = Connection {
-            edges: todo!(),
-            page_info: todo!(),
+            edges: nodes,
+            page_info: None,
         };
 
-        todo!()
+        Ok(tonic::Response::new(conn))
     }
 
     #[doc = " get category by a with id"]

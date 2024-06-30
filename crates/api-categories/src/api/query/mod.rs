@@ -1,4 +1,7 @@
-use async_graphql::{Context, MergedObject, Object};
+use async_graphql::{
+    connection::{Connection, Edge, EmptyFields},
+    Context, MergedObject, Object, Result,
+};
 use sellershut_core::{categories::query_categories_server::QueryCategories, common::Paginate};
 use tonic::IntoRequest;
 use tracing::instrument;
@@ -21,14 +24,25 @@ impl GraphqlQuery {
         #[graphql(validator(min_length = 1))] before: Option<String>,
         #[graphql(validator(minimum = 1, maximum = 100))] first: Option<i32>,
         #[graphql(validator(minimum = 1, maximum = 100))] last: Option<i32>,
-    ) -> async_graphql::Result<Vec<Category>> {
+    ) -> Result<Connection<String, Category, EmptyFields, EmptyFields>> {
         let pagination = Params::parse(after, before, first, last)?;
 
         let service = ctx.data::<ApiState>()?;
 
-        service.categories(pagination.into_request()).await?;
+        let res = service
+            .categories(pagination.into_request())
+            .await?
+            .into_inner();
 
-        Ok(vec![])
+        let mut conn = Connection::new(false, false);
+
+        conn.edges = res
+            .edges
+            .into_iter()
+            .map(|f| Edge::new(String::default(), Category::from(f.node.unwrap())))
+            .collect();
+
+        Ok(conn)
     }
 }
 
