@@ -26,7 +26,7 @@ command = "cargo"
 args = [ "watch", "-c", "-x run" ]
 
 [tasks.migrate]
-install_crate = { crate_name = "sqlx-cli" }
+# install_crate = { crate_name = "sqlx-cli" }
 workspace = false
 command = "cargo"
 args = [ "sqlx", "migrate", "run", "--source",  "./crates/api-categories/migrations" ]
@@ -35,7 +35,7 @@ env_files = [
 ]
 
 [tasks.check]
-install_crate = { crate_name = "cargo-hack" }
+# install_crate = { crate_name = "cargo-hack" }
 workspace = false
 command = "cargo"
 args = [ "hack", "--feature-powerset", "check" ]
