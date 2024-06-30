@@ -1,0 +1,41 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+dependencies = ["clean"]
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+dependencies = ["clean"]
+
+[tasks.dev]
+workspace = false
+command = "cargo"
+args = [ "watch", "-c", "-x run" ]
+
+[tasks.migrate]
+install_crate = { crate_name = "sqlx-cli" }
+workspace = false
+command = "cargo"
+args = [ "sqlx", "migrate", "run", "--source",  "./crates/api-categories/migrations" ]
+env_files = [
+  "./crates/api-categories/.env",
+]
+
+[tasks.check]
+install_crate = { crate_name = "cargo-hack" }
+workspace = false
+command = "cargo"
+args = [ "hack", "--feature-powerset", "check" ]
