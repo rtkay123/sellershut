@@ -1,13 +1,12 @@
 mod health_check;
 
-use async_graphql::{EmptyMutation, EmptySubscription, Schema};
 use axum::{body::Body, http::Request, http::Response, Router};
 use sqlx::PgPool;
 use std::sync::Once;
 use tower::util::ServiceExt;
 
 use crate::{
-    api::{query::CategoryQuery, ApiSchemaBuilder},
+    api::{ApiSchema, ApiSchemaBuilder},
     routes::router,
     state::{config::Configuration, ApiState},
 };
@@ -17,7 +16,7 @@ static TRACING: Once = Once::new();
 pub struct TestApp {
     pub router: Router,
     pub state: ApiState,
-    pub schema: Schema<CategoryQuery, EmptyMutation, EmptySubscription>,
+    pub schema: ApiSchema,
 }
 
 impl TestApp {
