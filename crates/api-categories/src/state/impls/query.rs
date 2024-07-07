@@ -22,7 +22,7 @@ impl QueryCategories for ApiState {
         let pagination = request.into_inner();
         let db_conn = &self.db_pool;
 
-        let res = sqlx::query_as!(entity::Category, "select * FROM category")
+        let res = sqlx::query_as!(Category, "select * FROM category")
             .fetch_all(db_conn)
             .await
             .map_err(map_err)?;
@@ -32,7 +32,7 @@ impl QueryCategories for ApiState {
         let nodes = res
             .into_iter()
             .map(|f| Node {
-                node: Some(Category::from(f)),
+                node: Some(f),
                 cursor: String::default(),
             })
             .collect();
@@ -53,7 +53,14 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<SearchQuery>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
-        todo!()
+        let id = request.into_inner().query;
+
+        let category = sqlx::query_as!(Category, "select * from category where id = $1", id)
+            .fetch_one(&self.db_pool)
+            .await
+            .map_err(map_err)?;
+
+        Ok(tonic::Response::new(category))
     }
 
     #[doc = " get subcategories"]
