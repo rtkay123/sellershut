@@ -11,6 +11,7 @@ pub struct Category {
     #[graphql(default)]
     pub sub_categories: Vec<String>,
     pub image_url: Option<String>,
+    #[cfg_attr(test, dummy(default))]
     pub parent_id: Option<String>,
     #[graphql(skip_input)]
     pub created_at: i64,
