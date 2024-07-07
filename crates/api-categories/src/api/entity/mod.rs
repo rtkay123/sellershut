@@ -1,7 +1,7 @@
 use async_graphql::{InputObject, SimpleObject};
 use sqlx::prelude::FromRow;
 
-#[derive(SimpleObject, InputObject, FromRow)]
+#[derive(SimpleObject, InputObject, FromRow, Debug)]
 #[graphql(input_name = "CategoryInput")]
 pub struct Category {
     #[graphql(skip_input)]

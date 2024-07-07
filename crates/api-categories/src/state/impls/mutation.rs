@@ -1,6 +1,6 @@
 use sellershut_core::{
     categories::{mutate_categories_server::MutateCategories, Category},
-    common::SearchQuery,
+    common::{Empty, SearchQuery},
 };
 
 use crate::state::ApiState;
@@ -33,7 +33,7 @@ impl MutateCategories for ApiState {
     async fn delete(
         &self,
         request: tonic::Request<SearchQuery>,
-    ) -> Result<tonic::Response<Category>, tonic::Status> {
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
         todo!()
     }
 }

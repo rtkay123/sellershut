@@ -24,7 +24,7 @@ service MutateCategories {
   // Update a category
   rpc Update (Category) returns (Category) {}
   // Delete a category
-  rpc Delete (common.SearchQuery) returns (Category) {}
+  rpc Delete (common.SearchQuery) returns (common.Empty) {}
 }
 
 // A category
