@@ -13,7 +13,7 @@
 pub mod categories;
 
 //#[cfg(all(feature = "tonic", any(feature = "categories")))] : more entities should come in `any`
-#[cfg(all(feature = "tonic", feature = "categories"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "tonic", feature = "categories"))))]
+#[cfg(any(all(feature = "tonic", feature = "categories"), feature = "id-gen"))]
+#[cfg_attr(docsrs, doc(cfg(any(all(feature = "tonic", feature = "categories"), feature = "id-gen"))))]
 /// Resuable utilities
 pub mod common;
