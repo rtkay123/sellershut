@@ -20,4 +20,5 @@ tonic.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+fake = { workspace = true, features = ["derive"] }
 tower.workspace = true
