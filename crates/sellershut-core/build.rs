@@ -1,17 +1,23 @@
 enum Entity {
     Category,
+    User,
+    Oauth,
 }
 
 impl Entity {
     fn package(&self) -> String {
         match self {
             Entity::Category => "categories",
+            Entity::User => "users",
+            Entity::Oauth => "oauth",
         }
         .into()
     }
     fn path(&self) -> String {
         match self {
             Entity::Category => "proto/category.proto",
+            Entity::User => "proto/user.proto",
+            Entity::Oauth => "proto/oauth.proto",
         }
         .into()
     }
@@ -26,6 +32,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         protos.push(Entity::Category);
     }
 
+    if cfg!(feature = "users") {
+        protos.push(Entity::User);
+        protos.push(Entity::Oauth);
+    }
+
     let includes = [""];
     let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);
 
@@ -33,8 +44,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let path = proto.path();
         let package = proto.package();
 
-        let config =
-            tonic_build::configure().type_attribute(".", "#[derive(Eq, PartialOrd, Ord, Hash)]");
+        let config = tonic_build::configure();
+        //.type_attribute(".", "#[derive(Eq, PartialOrd, Ord, Hash)]");
 
         #[cfg(feature = "serde")]
         let config = config.type_attribute(

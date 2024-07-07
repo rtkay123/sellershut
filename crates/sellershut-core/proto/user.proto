@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package users;
+
+import "proto/common.proto"; // Importing common.proto for reusability
+
+/// A user
+message User {
+    /// A group for users
+    message Group {
+        string id = 1;         // Unique identifier for the group
+        repeated string users = 2; // List of user IDs belonging to this group
+        string description = 3; // Description or details about the group
+    }
+
+    /// A type of user
+    enum Type {
+        Individual = 0; // Type representing an individual user
+        PartOfGroup = 1;      // Type representing a group of users
+    }
+
+    string id = 1;            // Unique identifier for the user
+    string username = 2;      // Username chosen by the user
+    string email = 3;         // Email address of the user
+    optional string name = 4; // Optional full name of the user
+    optional string avatar = 5; // Optional URL to the user's avatar image
+    Type type = 6;            // Type of the user (Individual or Group)
+    int64 created_at = 7;     // Timestamp (millisecond precision) when the user was created
+    int64 updated_at = 8;     // Timestamp (millisecond precision) when the user was last updated
+}

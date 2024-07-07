@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package oauth;
+
+import "proto/common.proto";
+
+// Oauth Account Provider
+message AccountProvider {
+    string id = 1;   // Unique identifier for the account provider
+    string name = 2; // Name of the account provider
+}
+
+// Oauth Session
+message Session {
+    string user_id = 1;           // ID of the user associated with this session
+    int64 expires_at = 2;         // Timestamp (millisecond precision) when the session expires
+    AccountProvider account_provider = 3; // Information about the account provider associated with this session
+    string session_token = 4;     // Token used to authenticate the session
+}
+

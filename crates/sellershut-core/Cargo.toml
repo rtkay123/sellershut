@@ -17,8 +17,11 @@ categories = ["tonic"]
 id-gen = ["dep:nanoid"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:tonic-types"]
+rpc-client-users = ["users", "dep:tonic-types"]
+rpc-server-users = ["users", "dep:tonic-types"]
 serde = ["dep:serde", "serde/derive"]
 tonic = ["dep:tonic", "dep:prost"]
+users = ["tonic"]
 
 [build-dependencies]
 tonic-build.workspace = true

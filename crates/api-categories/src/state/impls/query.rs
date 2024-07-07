@@ -4,10 +4,7 @@ use sellershut_core::{
 };
 use tracing::instrument;
 
-use crate::{
-    api::entity,
-    state::{impls::map_err, ApiState},
-};
+use crate::state::{impls::map_err, ApiState};
 
 #[tonic::async_trait]
 impl QueryCategories for ApiState {

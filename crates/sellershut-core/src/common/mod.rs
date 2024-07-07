@@ -1,4 +1,4 @@
-#[cfg(all(feature = "tonic", feature = "categories"))]
+#[cfg(all(feature = "tonic", any(feature = "categories", feature = "users")))]
 tonic::include_proto!("common");
 
 #[cfg(feature = "id-gen")]
