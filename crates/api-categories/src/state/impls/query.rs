@@ -45,7 +45,7 @@ impl QueryCategories for ApiState {
         Ok(tonic::Response::new(conn))
     }
 
-    #[doc = " get category by a with id"]
+    #[doc = " get category by id"]
     #[must_use]
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     #[instrument(skip(self), err(Debug))]

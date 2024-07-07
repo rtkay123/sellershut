@@ -9,7 +9,7 @@ import "proto/common.proto";
 service QueryCategories {
   // gets all categories
   rpc Categories (common.Paginate) returns (Connection) {}
-  // get category by a with id
+  // get category by id
   rpc CategoryById (common.SearchQuery) returns (Category) {}
   // get subcategories
   rpc SubCategories (common.SearchQueryOptional) returns (Connection) {}
