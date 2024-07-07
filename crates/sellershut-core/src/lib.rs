@@ -17,3 +17,6 @@ pub mod categories;
 #[cfg_attr(docsrs, doc(cfg(any(all(feature = "tonic", feature = "categories"), feature = "id-gen"))))]
 /// Resuable utilities
 pub mod common;
+
+#[cfg(test)]
+mod tests;
