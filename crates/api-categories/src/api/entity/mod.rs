@@ -3,6 +3,7 @@ use sqlx::prelude::FromRow;
 
 #[derive(SimpleObject, InputObject, FromRow, Debug)]
 #[graphql(input_name = "CategoryInput")]
+#[cfg_attr(test, derive(fake::Dummy))]
 pub struct Category {
     #[graphql(skip_input)]
     pub id: String,
@@ -11,7 +12,9 @@ pub struct Category {
     pub sub_categories: Vec<String>,
     pub image_url: Option<String>,
     pub parent_id: Option<String>,
+    #[graphql(skip_input)]
     pub created_at: i64,
+    #[graphql(skip_input)]
     pub updated_at: i64,
 }
 

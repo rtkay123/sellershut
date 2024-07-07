@@ -60,7 +60,37 @@ impl MutateCategories for ApiState {
         &self,
         request: tonic::Request<Category>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
-        todo!()
+        let category = request.into_inner();
+
+        let now = SystemTime::now();
+
+        // Calculate the duration since the epoch
+        let duration_since_epoch = now.duration_since(UNIX_EPOCH).map_err(map_err)?.as_millis();
+
+        // Check if the value fits within the range of i64
+        if duration_since_epoch <= i64::MAX as u128 {
+            let duration_since_epoch = duration_since_epoch as i64;
+            sqlx::query!(
+                "update category set name = $2, sub_categories = $3, image_url = $4, parent_id = $5, updated_at = $6
+                where id = $1",
+                category.id,
+                category.name,
+                &category.sub_categories,
+                category.image_url,
+                category.parent_id,
+                duration_since_epoch,
+            ).execute(&self.db_pool).await.map_err(map_err)?;
+
+            let mut resp = category;
+            resp.updated_at = duration_since_epoch;
+
+            Ok(tonic::Response::new(resp))
+        } else {
+            Err(tonic::Status::new(
+                tonic::Code::Internal,
+                "Cannot convert u128 to i64: value exceeds i64 range",
+            ))
+        }
     }
 
     #[doc = " Delete a category"]
@@ -70,6 +100,13 @@ impl MutateCategories for ApiState {
         &self,
         request: tonic::Request<SearchQuery>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
-        todo!()
+        let id = request.into_inner().query;
+
+        sqlx::query!("delete from category where id = $1", id)
+            .execute(&self.db_pool)
+            .await
+            .map_err(map_err)?;
+
+        Ok(tonic::Response::new(Empty::default()))
     }
 }
