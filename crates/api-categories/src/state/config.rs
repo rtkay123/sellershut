@@ -21,6 +21,8 @@ pub struct Configuration {
     pub db_dsn: String,
     /// The maximum number of connections for the PostgreSQL pool.
     pub db_pool_max_size: u32,
+    /// Query limit
+    pub query_limit: i32,
 }
 
 #[derive(Deserialize, Debug, Copy, Clone)]
@@ -40,6 +42,10 @@ impl Configuration {
             .parse::<u16>()
             .expect("Unable to parse the value of the PORT environment variable. Please make sure it is a valid unsigned 16-bit integer");
 
+        let query_limit = env_var("QUERY_LIMIT")
+            .parse::<i32>()
+            .expect("Max results to return per query");
+
         let db_dsn = env_var("DATABASE_URL");
 
         let db_pool_max_size = env_var("DATABASE_POOL_MAX_SIZE")
@@ -54,6 +60,7 @@ impl Configuration {
             app_port,
             db_dsn,
             db_pool_max_size,
+            query_limit,
         })
     }
 

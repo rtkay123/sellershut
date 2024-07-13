@@ -5,6 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+base64 = { version = "0.22.1", optional = true }
 nanoid = { version = "0.4.0", optional = true }
 prost = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
@@ -16,9 +17,9 @@ default = []
 categories = ["tonic"]
 id-gen = ["dep:nanoid"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
-rpc-server-categories = ["categories", "dep:tonic-types"]
+rpc-server-categories = ["categories", "dep:base64", "dep:tonic-types"]
 rpc-client-users = ["users", "dep:tonic-types"]
-rpc-server-users = ["users", "dep:tonic-types"]
+rpc-server-users = ["users", "dep:base64", "dep:tonic-types"]
 serde = ["dep:serde", "serde/derive"]
 tonic = ["dep:tonic", "dep:prost"]
 users = ["tonic"]

@@ -17,4 +17,3 @@ message Session {
     AccountProvider account_provider = 3; // Information about the account provider associated with this session
     string session_token = 4;     // Token used to authenticate the session
 }
-

@@ -1,6 +1,6 @@
 use sellershut_core::{
     categories::{query_categories_server::QueryCategories, Category, Connection, Node},
-    common::{Paginate, SearchQuery, SearchQueryOptional},
+    common::{paginate::Cursor, Paginate, SearchQuery, SearchQueryOptional},
 };
 use tracing::instrument;
 
@@ -17,29 +17,105 @@ impl QueryCategories for ApiState {
         request: tonic::Request<Paginate>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         let pagination = request.into_inner();
+        let max = self.config.query_limit;
+
+        // get count
+        let actual_count = {
+            let user_param = pagination.first.unwrap_or(pagination.last());
+            if user_param > max {
+                max
+            } else {
+                user_param
+            }
+        };
+
+        let get_count: i64 = actual_count as i64 + 1;
+
         let db_conn = &self.db_pool;
 
-        let res = sqlx::query_as!(Category, "select * FROM category")
+        let left_side = pagination.before.is_none();
+        let cursor_unavailable = pagination.after.is_none() && pagination.before.is_none();
+
+        let categories = if cursor_unavailable {
+            sqlx::query_as!(
+                Category,
+                "select * FROM category
+                limit $1",
+                get_count
+            )
             .fetch_all(db_conn)
             .await
-            .map_err(map_err)?;
+            .map_err(map_err)?
+        } else {
+            // get cursor
+            let cursor = Cursor::decode(pagination);
 
-        let len = res.len();
+            let created_at = cursor.created_at();
+            let id = cursor.id();
 
-        let nodes = res
-            .into_iter()
-            .map(|f| Node {
-                node: Some(f),
-                cursor: String::default(),
-            })
-            .collect();
+            if left_side {
+                sqlx::query_as!(
+                    Category,
+                    "select * FROM category
+                        where (created_at = $1 and id > $2)
+                            or created_at >= $1
+                    order by 
+                        created_at asc,
+                        id asc
+                    limit $3",
+                    created_at,
+                    id,
+                    get_count
+                )
+                .fetch_all(db_conn)
+                .await
+                .map_err(map_err)?
+            } else {
+                sqlx::query_as!(
+                    Category,
+                    "select * FROM category
+                        where (created_at = $1 and id < $2)
+                            or created_at <= $1
+                    order by 
+                        created_at asc,
+                        id asc
+                    limit $3",
+                    created_at,
+                    id,
+                    get_count
+                )
+                .fetch_all(db_conn)
+                .await
+                .map_err(map_err)?
+            }
+        };
 
-        let conn = Connection {
-            edges: nodes,
+        let len = categories.len();
+        let user_count = actual_count as usize;
+
+        let has_more = len > user_count;
+
+        let categories = if has_more {
+            categories.into_iter().take(user_count).collect()
+        } else {
+            categories
+        };
+
+        let connection = Connection {
+            edges: categories
+                .into_iter()
+                .map(|category| {
+                    let cursor = Cursor::new(&category.id, category.created_at);
+                    Node {
+                        node: Some(category),
+                        cursor: cursor.encode(),
+                    }
+                })
+                .collect(),
             page_info: None,
         };
 
-        Ok(tonic::Response::new(conn))
+        Ok(tonic::Response::new(connection))
     }
 
     #[doc = " get category by id"]

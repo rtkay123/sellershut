@@ -39,7 +39,12 @@ impl GraphqlQuery {
         conn.edges = res
             .edges
             .into_iter()
-            .map(|f| Edge::new(String::default(), Category::from(f.node.unwrap())))
+            .map(|f| {
+                Edge::new(
+                    f.cursor,
+                    Category::from(f.node.expect("category to be some")),
+                )
+            })
             .collect();
 
         Ok(conn)

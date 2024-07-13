@@ -9,14 +9,11 @@ message User {
     /// A group for users
     message Group {
         string id = 1;         // Unique identifier for the group
-        repeated string users = 2; // List of user IDs belonging to this group
+        string name = 2; // Name of the group
         string description = 3; // Description or details about the group
-    }
-
-    /// A type of user
-    enum Type {
-        Individual = 0; // Type representing an individual user
-        PartOfGroup = 1;      // Type representing a group of users
+        string admin_id = 4; // User Id for the group's admin
+        int64 created_at = 5;     // Timestamp (millisecond precision) when the user was created
+        int64 updated_at = 6;     // Timestamp (millisecond precision) when the user was last updated
     }
 
     string id = 1;            // Unique identifier for the user
@@ -24,7 +21,7 @@ message User {
     string email = 3;         // Email address of the user
     optional string name = 4; // Optional full name of the user
     optional string avatar = 5; // Optional URL to the user's avatar image
-    Type type = 6;            // Type of the user (Individual or Group)
+    optional string group_id = 6; // Type of the user (Individual or Group)
     int64 created_at = 7;     // Timestamp (millisecond precision) when the user was created
     int64 updated_at = 8;     // Timestamp (millisecond precision) when the user was last updated
 }
