@@ -415,3 +415,7 @@ impl QueryCategories for ApiState {
         todo!()
     }
 }
+
+impl ApiState {
+    pub async fn index_categories(&self) {}
+}

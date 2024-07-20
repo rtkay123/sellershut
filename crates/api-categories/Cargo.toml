@@ -11,6 +11,7 @@ async-graphql = { workspace = true, features = ["playground"] }
 async-graphql-axum.workspace = true
 dotenvy.workspace = true
 futures-util.workspace = true
+meilisearch-sdk.workspace = true
 sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde"] }
 sellershut-services = { workspace = true, features = ["telemetry"] }
 serde = { workspace = true, features = ["derive"] }

@@ -11,6 +11,8 @@ use tracing::info;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let state = ApiState::initialise().await?;
+    state.index_categories().await;
+
     let env = state.config.env;
 
     // derive clone ok

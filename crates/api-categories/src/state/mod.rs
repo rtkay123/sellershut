@@ -4,12 +4,14 @@ mod impls;
 use std::path::Path;
 
 use config::{Config, Configuration};
+use meilisearch_sdk::{client::Client, indexes::Index};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
 #[derive(Clone)]
 pub struct ApiState {
     pub config: Config,
     pub db_pool: PgPool,
+    pub meilisearch_index: Index,
 }
 
 impl ApiState {
@@ -32,9 +34,14 @@ impl ApiState {
         #[cfg(not(test))]
         sqlx::migrate!("./migrations").run(&pool).await?;
 
+        let client = Client::new(&config.meilisearch_url, Some(&config.meilisearch_api_key))?;
+
+        let index = client.index(&config.meilisearch_index);
+
         Ok(Self {
             config,
             db_pool: pool,
+            meilisearch_index: index,
         })
     }
 }

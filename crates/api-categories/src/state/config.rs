@@ -23,6 +23,12 @@ pub struct Configuration {
     pub db_pool_max_size: u32,
     /// Query limit
     pub query_limit: i32,
+    /// Meilisearch URL
+    pub meilisearch_url: String,
+    /// Meilisearch api-key
+    pub meilisearch_api_key: String,
+    /// Meilisearch index
+    pub meilisearch_index: String,
 }
 
 #[derive(Deserialize, Debug, Copy, Clone)]
@@ -54,6 +60,10 @@ impl Configuration {
 
         let listen_address = SocketAddr::from((Ipv6Addr::UNSPECIFIED, app_port));
 
+        let meilisearch_url = env_var("MEILISEARCH_URL");
+        let meilisearch_index = env_var("MEILISEARCH_INDEX");
+        let meilisearch_api_key = env_var("MEILISEARCH_APIKEY");
+
         Arc::new(Configuration {
             env,
             listen_address,
@@ -61,6 +71,9 @@ impl Configuration {
             db_dsn,
             db_pool_max_size,
             query_limit,
+            meilisearch_url,
+            meilisearch_api_key,
+            meilisearch_index,
         })
     }
 

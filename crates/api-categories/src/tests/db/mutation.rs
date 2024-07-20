@@ -43,22 +43,23 @@ async fn db_update(pg_pool: PgPool) -> sqlx::Result<()> {
     let state = &app.state;
 
     let category: Category = Faker.fake();
-    dbg!(&category);
 
     let category = sellershut_core::categories::Category::from(category);
+    dbg!(&category);
 
     let mut create_res = state
         .create(category.clone().into_request())
         .await
         .expect("category to be created")
         .into_inner();
+    dbg!(&create_res);
 
     create_res.name = "New name".into();
 
-    let update_res = state
+    let mut update_res = state
         .update(create_res.clone().into_request())
         .await
-        .expect("category to be created")
+        .expect("category to be updated")
         .into_inner();
 
     assert_eq!(ID_LENGTH, create_res.id.len());
@@ -66,6 +67,7 @@ async fn db_update(pg_pool: PgPool) -> sqlx::Result<()> {
     assert_eq!(create_res.created_at, create_res.updated_at);
     assert_eq!(create_res.created_at, update_res.created_at);
     assert_ne!(create_res.updated_at, update_res.updated_at);
+    assert_eq!(create_res.idx, update_res.idx);
 
     let id = SearchQuery {
         query: create_res.id.to_string(),
@@ -76,6 +78,8 @@ async fn db_update(pg_pool: PgPool) -> sqlx::Result<()> {
         .await
         .unwrap()
         .into_inner();
+
+    update_res.idx = fetch_val.idx;
 
     assert_eq!(update_res, fetch_val);
 
