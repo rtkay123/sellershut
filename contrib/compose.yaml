@@ -1,4 +1,27 @@
 services:
+  meilisearch:
+    container_name: meilisearch
+    image: getmeili/meilisearch:v1.9
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - http_proxy
+      - https_proxy
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-masterKey}
+      - MEILI_NO_ANALYTICS=${MEILI_NO_ANALYTICS:-true}
+      - MEILI_ENV=${MEILI_ENV:-development}
+      - MEILI_LOG_LEVEL
+    ports:
+      - "7700:7700"
+    networks:
+      - sellershut
+    volumes:
+      - meili_data:/meili_data
+    restart: unless-stopped
+
   categories-db:
     image: postgres:16.3
     restart: always
@@ -25,3 +48,4 @@ networks:
 
 volumes:
   postgres:
+  meili_data:
