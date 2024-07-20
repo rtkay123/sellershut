@@ -17,12 +17,15 @@ pub struct Category {
     pub created_at: i64,
     #[graphql(skip_input)]
     pub updated_at: i64,
+    #[graphql(skip)]
+    pub idx: i32,
 }
 
 impl From<sellershut_core::categories::Category> for Category {
     fn from(value: sellershut_core::categories::Category) -> Self {
         Self {
             id: value.id,
+            idx: value.idx,
             name: value.name,
             sub_categories: value.sub_categories,
             image_url: value.image_url,
@@ -37,6 +40,7 @@ impl From<Category> for sellershut_core::categories::Category {
     fn from(value: Category) -> Self {
         Self {
             id: value.id,
+            idx: value.idx,
             name: value.name,
             sub_categories: value.sub_categories,
             image_url: value.image_url,

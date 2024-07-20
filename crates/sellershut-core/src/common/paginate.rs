@@ -5,15 +5,15 @@ use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 #[derive(Debug)]
 pub struct Cursor {
     id: String,
-    created_at: i64,
+    idx: i32,
 }
 
 impl Cursor {
     /// Create cursor
-    pub fn new(id: &str, created_at: i64) -> Self {
+    pub fn new(id: &str, idx: i32) -> Self {
         Self {
             id: id.to_string(),
-            created_at,
+            idx,
         }
     }
     /// decode a cursor
@@ -25,14 +25,15 @@ impl Cursor {
         let bytes = BASE64_URL_SAFE_NO_PAD.decode(&cursor).unwrap();
 
         let decoded = String::from_utf8(bytes).unwrap();
+        println!("decoding: {decoded}");
 
         let mut tokens = decoded.split(':');
-        let first = tokens.next().unwrap();
-        let last = tokens.next().unwrap();
+        let idx = tokens.next().unwrap();
+        let id = tokens.next().unwrap();
 
         Self {
-            id: first.to_string(),
-            created_at: last.parse().unwrap(),
+            id: id.to_string(),
+            idx: idx.parse().unwrap(),
         }
     }
 
@@ -41,13 +42,13 @@ impl Cursor {
         &self.id
     }
 
-    /// get created_at
-    pub fn created_at(&self) -> i64 {
-        self.created_at
+    /// get index
+    pub fn idx(&self) -> i32 {
+        self.idx
     }
 
     /// encode a cursor
     pub fn encode(&self) -> String {
-        BASE64_URL_SAFE_NO_PAD.encode(format!("{}:{}", self.created_at, self.id))
+        BASE64_URL_SAFE_NO_PAD.encode(format!("{}:{}", self.idx, self.id))
     }
 }

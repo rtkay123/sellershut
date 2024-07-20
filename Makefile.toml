@@ -20,10 +20,10 @@ command = "cargo"
 args = ["test"]
 dependencies = ["clean"]
 
-[tasks.dev]
+[tasks.dev-categories]
 workspace = false
 command = "cargo"
-args = [ "watch", "-c", "-x run" ]
+args = [ "watch", "-c", "-x", "run --bin sellershut-api-categories" ]
 
 [tasks.migrate]
 # install_crate = { crate_name = "sqlx-cli" }

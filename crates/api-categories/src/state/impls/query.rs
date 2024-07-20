@@ -39,7 +39,7 @@ impl QueryCategories for ApiState {
         let categories = if cursor_unavailable {
             sqlx::query_as!(
                 Category,
-                "select * FROM category
+                "select * FROM category order by created_at asc
                 limit $1",
                 get_count
             )
@@ -50,21 +50,17 @@ impl QueryCategories for ApiState {
             // get cursor
             let cursor = Cursor::decode(pagination);
 
-            let created_at = cursor.created_at();
-            let id = cursor.id();
+            let index = cursor.idx();
 
             if left_side {
                 sqlx::query_as!(
                     Category,
                     "select * FROM category
-                        where (created_at = $1 and id > $2)
-                            or created_at >= $1
+                        where idx > $1
                     order by 
-                        created_at asc,
-                        id asc
-                    limit $3",
-                    created_at,
-                    id,
+                        created_at asc
+                    limit $2",
+                    index,
                     get_count
                 )
                 .fetch_all(db_conn)
@@ -74,14 +70,11 @@ impl QueryCategories for ApiState {
                 sqlx::query_as!(
                     Category,
                     "select * FROM category
-                        where (created_at = $1 and id < $2)
-                            or created_at <= $1
+                        where idx < $1
                     order by 
-                        created_at asc,
-                        id asc
-                    limit $3",
-                    created_at,
-                    id,
+                        created_at desc
+                    limit $2",
+                    index,
                     get_count
                 )
                 .fetch_all(db_conn)
@@ -95,8 +88,16 @@ impl QueryCategories for ApiState {
 
         let has_more = len > user_count;
 
+        println!("{categories:#?}");
+
         let categories = if has_more {
-            categories.into_iter().take(user_count).collect()
+            let iter = categories.into_iter();
+            if !left_side {
+                // from the right side
+                iter.rev().take(user_count).rev().collect()
+            } else {
+                iter.take(user_count).collect()
+            }
         } else {
             categories
         };
@@ -105,7 +106,7 @@ impl QueryCategories for ApiState {
             edges: categories
                 .into_iter()
                 .map(|category| {
-                    let cursor = Cursor::new(&category.id, category.created_at);
+                    let cursor = Cursor::new(&category.id, category.idx);
                     Node {
                         node: Some(category),
                         cursor: cursor.encode(),
