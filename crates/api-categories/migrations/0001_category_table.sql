@@ -1,5 +1,6 @@
 create table category (
-    id varchar(21) primary key,
+    idx serial primary key,
+    id varchar(21) unique not null,
     name varchar not null,
     sub_categories varchar(21)[] not null, -- array of ids
     image_url varchar, -- optional image url
@@ -8,6 +9,7 @@ create table category (
     updated_at bigint not null -- millisecond precision timestamp for last update
 );
 
+create index idx_category_id on category (id);
 create index idx_category_name on category (name);
 create index idx_category_parent_id on category (parent_id);
-create index idx_category_created_at_id_parent on category (created_at, id, parent_id);
+create index idx_category_idx_id_parent on category (idx, id, parent_id);

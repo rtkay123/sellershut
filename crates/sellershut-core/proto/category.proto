@@ -36,6 +36,7 @@ message Category {
   optional string parent_id = 5; // The direct parent of this category (if applicable)
   int64 created_at = 6; // Timestamp (millisecond precision) indicating when this category was created
   int64 updated_at = 7; // Timestamp (millisecond precision) indicating when this category was last updated
+  int32 idx = 8; // A unique (row number) identifier
 }
 
 // A response node
