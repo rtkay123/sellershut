@@ -72,7 +72,7 @@ impl QueryCategories for ApiState {
                     "select * FROM category
                         where idx < $1
                     order by 
-                        created_at desc
+                        created_at asc
                     limit $2",
                     index,
                     get_count
@@ -91,13 +91,7 @@ impl QueryCategories for ApiState {
         println!("{categories:#?}");
 
         let categories = if has_more {
-            let iter = categories.into_iter();
-            if !left_side {
-                // from the right side
-                iter.rev().take(user_count).rev().collect()
-            } else {
-                iter.take(user_count).collect()
-            }
+            categories.into_iter().take(user_count).collect()
         } else {
             categories
         };

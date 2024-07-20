@@ -61,6 +61,9 @@ impl Params {
         first: Option<i32>,
         last: Option<i32>,
     ) -> async_graphql::Result<Paginate> {
+        if (last.is_some() && after.is_some()) || (before.is_some() && first.is_some()) {
+            return Err("invalid pagination arguments. Backwards pagination needs 'last' and 'before'. Forward pagination uses 'first' and (optionally) 'after'".into());
+        }
         if last.is_none() && first.is_none() {
             return Err("One of 'first' or 'last' should be provided".into());
         }
