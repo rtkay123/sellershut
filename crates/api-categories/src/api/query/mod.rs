@@ -34,7 +34,9 @@ impl GraphqlQuery {
             .await?
             .into_inner();
 
-        let mut conn = Connection::new(false, false);
+        let page_info = res.page_info.as_ref().expect("page_info to be defined");
+
+        let mut conn = Connection::new(page_info.has_previous_page, page_info.has_next_page);
 
         conn.edges = res
             .edges

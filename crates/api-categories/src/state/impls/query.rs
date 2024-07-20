@@ -1,3 +1,4 @@
+use futures_util::TryFutureExt;
 use sellershut_core::{
     categories::{query_categories_server::QueryCategories, Category, Connection, Node},
     common::{paginate::Cursor, Paginate, SearchQuery, SearchQueryOptional},
@@ -36,8 +37,8 @@ impl QueryCategories for ApiState {
         let left_side = pagination.before.is_none();
         let cursor_unavailable = pagination.after.is_none() && pagination.before.is_none();
 
-        let categories = if cursor_unavailable {
-            sqlx::query_as!(
+        let (count_on_other_end, categories) = if cursor_unavailable {
+            let categories = sqlx::query_as!(
                 Category,
                 "select * FROM category order by created_at asc
                 limit $1",
@@ -45,7 +46,9 @@ impl QueryCategories for ApiState {
             )
             .fetch_all(db_conn)
             .await
-            .map_err(map_err)?
+            .map_err(map_err)?;
+            // use the difference of actual_count and get_count
+            (0, categories)
         } else {
             // get cursor
             let cursor = Cursor::decode(pagination);
@@ -53,7 +56,12 @@ impl QueryCategories for ApiState {
             let index = cursor.idx();
 
             if left_side {
-                sqlx::query_as!(
+                let fut_count =
+                    sqlx::query_scalar!("select count (*) from category where idx <= $1", 2)
+                        .fetch_one(db_conn)
+                        .map_err(map_err);
+
+                let fut_categories = sqlx::query_as!(
                     Category,
                     "select * FROM category
                         where idx > $1
@@ -64,10 +72,21 @@ impl QueryCategories for ApiState {
                     get_count
                 )
                 .fetch_all(db_conn)
-                .await
-                .map_err(map_err)?
+                .map_err(map_err);
+
+                let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                let count = count.ok_or_else(|| {
+                    tonic::Status::new(tonic::Code::Internal, "count returned no items")
+                })?;
+
+                (count, categories)
             } else {
-                sqlx::query_as!(
+                let fut_count =
+                    sqlx::query_scalar!("select count (*) from category where idx >= $1", 2)
+                        .fetch_one(db_conn)
+                        .map_err(map_err);
+
+                let fut_categories = sqlx::query_as!(
                     Category,
                     "select * FROM category
                         where idx < $1
@@ -78,8 +97,13 @@ impl QueryCategories for ApiState {
                     get_count
                 )
                 .fetch_all(db_conn)
-                .await
-                .map_err(map_err)?
+                .map_err(map_err);
+
+                let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                let count = count.ok_or_else(|| {
+                    tonic::Status::new(tonic::Code::Internal, "count returned no items")
+                })?;
+                (count, categories)
             }
         };
 
@@ -87,8 +111,6 @@ impl QueryCategories for ApiState {
         let user_count = actual_count as usize;
 
         let has_more = len > user_count;
-
-        println!("{categories:#?}");
 
         let categories = if has_more {
             categories.into_iter().take(user_count).collect()
@@ -107,7 +129,23 @@ impl QueryCategories for ApiState {
                     }
                 })
                 .collect(),
-            page_info: None,
+            page_info: Some(sellershut_core::common::PageInfo {
+                has_next_page: {
+                    if cursor_unavailable || left_side {
+                        has_more
+                    } else {
+                        count_on_other_end > 0
+                    }
+                },
+                has_previous_page: {
+                    if left_side {
+                        count_on_other_end > 0
+                    } else {
+                        has_more
+                    }
+                },
+                ..Default::default() // other props calculated by async-graphql
+            }),
         };
 
         Ok(tonic::Response::new(connection))
