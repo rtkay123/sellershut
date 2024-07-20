@@ -17,15 +17,18 @@ impl Cursor {
         }
     }
     /// decode a cursor
-    pub fn decode(params: Paginate) -> Self {
+    pub fn decode(params: &Paginate) -> Self {
         let _count = params.first.unwrap_or_else(|| params.last());
 
-        let cursor = params.after.map_or_else(|| params.before, Some).unwrap();
+        let cursor = params
+            .after
+            .as_ref()
+            .map_or_else(|| params.before.as_ref(), Some)
+            .unwrap();
 
-        let bytes = BASE64_URL_SAFE_NO_PAD.decode(&cursor).unwrap();
+        let bytes = BASE64_URL_SAFE_NO_PAD.decode(cursor).unwrap();
 
         let decoded = String::from_utf8(bytes).unwrap();
-        println!("decoding: {decoded}");
 
         let mut tokens = decoded.split(':');
         let idx = tokens.next().unwrap();
@@ -50,5 +53,15 @@ impl Cursor {
     /// encode a cursor
     pub fn encode(&self) -> String {
         BASE64_URL_SAFE_NO_PAD.encode(format!("{}:{}", self.idx, self.id))
+    }
+}
+
+/// Gets maximum query results from pagination data
+pub fn query_count(max: i32, pagination: &Paginate) -> i32 {
+    let user_param = pagination.first.unwrap_or(pagination.last());
+    if user_param > max {
+        max
+    } else {
+        user_param
     }
 }

@@ -2,7 +2,10 @@ use async_graphql::{
     connection::{Connection, Edge, EmptyFields},
     Context, MergedObject, Object, Result,
 };
-use sellershut_core::{categories::query_categories_server::QueryCategories, common::Paginate};
+use sellershut_core::{
+    categories::query_categories_server::QueryCategories,
+    common::{Paginate, SearchQueryOptional},
+};
 use tonic::IntoRequest;
 use tracing::instrument;
 
@@ -31,6 +34,48 @@ impl GraphqlQuery {
 
         let res = service
             .categories(pagination.into_request())
+            .await?
+            .into_inner();
+
+        let page_info = res.page_info.as_ref().expect("page_info to be defined");
+
+        let mut conn = Connection::new(page_info.has_previous_page, page_info.has_next_page);
+
+        conn.edges = res
+            .edges
+            .into_iter()
+            .map(|f| {
+                Edge::new(
+                    f.cursor,
+                    Category::from(f.node.expect("category to be some")),
+                )
+            })
+            .collect();
+
+        Ok(conn)
+    }
+
+    #[instrument(skip(self, ctx), err(Debug))]
+    async fn sub_categories(
+        &self,
+        ctx: &Context<'_>,
+        parent_id: Option<String>,
+        #[graphql(validator(min_length = 1, max_length = 100))] after: Option<String>,
+        #[graphql(validator(min_length = 1, max_length = 100))] before: Option<String>,
+        #[graphql(validator(minimum = 1, maximum = 100))] first: Option<i32>,
+        #[graphql(validator(minimum = 1, maximum = 100))] last: Option<i32>,
+    ) -> Result<Connection<String, Category, EmptyFields, EmptyFields>> {
+        let pagination = Params::parse(after, before, first, last)?;
+
+        let service = ctx.data::<ApiState>()?;
+
+        let search_query = SearchQueryOptional {
+            query: parent_id,
+            pagination: Some(pagination),
+        };
+
+        let res = service
+            .sub_categories(search_query.into_request())
             .await?
             .into_inner();
 
