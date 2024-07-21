@@ -25,17 +25,18 @@ workspace = false
 command = "cargo"
 args = [ "watch", "-c", "-x", "run --bin sellershut-api-categories" ]
 
-[tasks.migrate]
-# install_crate = { crate_name = "sqlx-cli" }
+[tasks.migrate-categories]
+install_crate = { crate_name = "sqlx-cli", binary = "sqlx", test_arg = "--help" }
 workspace = false
-command = "cargo"
-args = [ "sqlx", "migrate", "run", "--source",  "./crates/api-categories/migrations" ]
+command = "sqlx"
+args = [ "migrate", "run", "--source",  "./crates/api-categories/migrations" ]
 env_files = [
   "./crates/api-categories/.env",
 ]
 
 [tasks.check]
-# install_crate = { crate_name = "cargo-hack" }
+install_crate = { crate_name = "cargo-hack", binary = "cargo", test_arg = ["hack", "--help"] }
 workspace = false
 command = "cargo"
+dependencies = ["migrate-categories"]
 args = [ "hack", "--feature-powerset", "check" ]
