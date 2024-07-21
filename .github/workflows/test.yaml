@@ -1,0 +1,61 @@
+on:
+  push:
+    branches: [master]
+  pull_request:
+name: test
+
+# cancel on going checks when new code is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  required:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      meilisearch:
+        image: getmeili/meilisearch
+        env:
+          MEILI_MASTER_KEY: masterKey
+        options: >-
+          --health-cmd "curl -f 'http://localhost:7700'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7700:7700
+    name: ubuntu / ${{ matrix.toolchain }}
+    strategy:
+      matrix:
+        toolchain: [stable, beta]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install ${{ matrix.toolchain }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - uses: Swatinem/rust-cache@v2
+      - name: install cargo-make
+        run: cargo install cargo-make
+      - name: prepare environment
+        run: |
+          cp crates/api-categories/.env.example crates/api-categories/.env
+      - name: run migrations
+        run: cargo make migrate-categories
+      - name: cargo test
+        run: cargo test --workspace --all-features --all-targets
+      - name: cargo test --doc
+        run: cargo test --workspace --all-features --doc
