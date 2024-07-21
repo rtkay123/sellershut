@@ -7,15 +7,20 @@ use sellershut_core::{
     common::{
         pagination::{
             cursor::{cursor_value::CursorType, CursorValue, Index},
-            Cursor,
+            Cursor, Offset,
         },
-        request::{search_query_optional::Pagination, SearchQuery, SearchQueryOptional},
+        request::{
+            search_query, search_query_optional::Pagination, SearchQuery, SearchQueryOptional,
+        },
     },
 };
 use tonic::IntoRequest;
 use tracing::instrument;
 
-use crate::{api::entity::Category, state::ApiState};
+use crate::{
+    api::entity::{Category, CategorySearchResult},
+    state::ApiState,
+};
 
 #[derive(Default, Debug, MergedObject)]
 pub struct Query(GraphqlQuery);
@@ -107,7 +112,7 @@ impl GraphqlQuery {
     async fn category_by_id(
         &self,
         ctx: &Context<'_>,
-        #[graphql(validator(min_length = 21))] id: String,
+        #[graphql(validator(min_length = 21, max_length = 21))] id: String,
     ) -> async_graphql::Result<Option<Category>> {
         let service = ctx.data::<ApiState>()?;
         let search_query = SearchQuery {
@@ -121,6 +126,35 @@ impl GraphqlQuery {
             .into_inner();
 
         Ok(Some(Category::from(res)))
+    }
+
+    #[instrument(skip(ctx), err(Debug))]
+    async fn search(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(validator(min_length = 1))] query: String,
+        offset: Option<i32>,
+        #[graphql(validator(minimum = 1))] limit: Option<i32>,
+    ) -> async_graphql::Result<Vec<CategorySearchResult>> {
+        let service = ctx.data::<ApiState>()?;
+
+        let search_query = SearchQuery {
+            query,
+            pagination: Some(search_query::Pagination::Offset(Offset {
+                offset: offset.unwrap_or_default(),
+                limit: limit.unwrap_or_default(),
+            })),
+        };
+
+        let res = service
+            .search(search_query.into_request())
+            .await?
+            .into_inner()
+            .results;
+
+        let results: Vec<_> = res.into_iter().map(CategorySearchResult::from).collect();
+
+        Ok(results)
     }
 }
 

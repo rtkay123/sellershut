@@ -467,7 +467,7 @@ impl QueryCategories for ApiState {
 
             let query = meilisearch_sdk::search::SearchQuery::new(&self.meilisearch_index)
                 .with_query(query.as_ref())
-                .with_limit(if data.limit > max {
+                .with_limit(if data.limit > max || data.limit == 0 {
                     max as usize
                 } else {
                     data.limit as usize
