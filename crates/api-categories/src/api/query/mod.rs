@@ -9,7 +9,7 @@ use sellershut_core::{
             cursor::{cursor_value::CursorType, CursorValue, Index},
             Cursor,
         },
-        request::{search_query_optional::Pagination, SearchQueryOptional},
+        request::{search_query_optional::Pagination, SearchQuery, SearchQueryOptional},
     },
 };
 use tonic::IntoRequest;
@@ -101,6 +101,26 @@ impl GraphqlQuery {
             .collect();
 
         Ok(conn)
+    }
+
+    #[instrument(skip(ctx), err(Debug))]
+    async fn category_by_id(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(validator(min_length = 21))] id: String,
+    ) -> async_graphql::Result<Option<Category>> {
+        let service = ctx.data::<ApiState>()?;
+        let search_query = SearchQuery {
+            query: id,
+            pagination: None,
+        };
+
+        let res = service
+            .category_by_id(search_query.into_request())
+            .await?
+            .into_inner();
+
+        Ok(Some(Category::from(res)))
     }
 }
 

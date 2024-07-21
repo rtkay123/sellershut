@@ -14,7 +14,7 @@ service QueryCategories {
   // get subcategories
   rpc SubCategories (common.request.SearchQueryOptional) returns (Connection) {}
   // search categories
-  rpc Search (common.request.SearchQuery) returns (SearchConnection) {}
+  rpc Search (common.request.SearchQuery) returns (SearchResult) {}
 }
 
 // Category Mutation Service
@@ -54,14 +54,6 @@ message Node {
     string cursor = 2;
 }
 
-// A response node
-message SearchNode {
-    // A category
-    CategorySearchResult node = 1;
-    // Pagination cursor
-    string cursor = 2;
-}
-
 // Connection contains a list of Node objects and the pagination information.
 message Connection {
   // The list of nodes in the current page.
@@ -70,10 +62,8 @@ message Connection {
   common.pagination.PageInfo pageInfo = 2;
 }
 
-// Connection contains a list of Node objects and the pagination information.
-message SearchConnection {
-  // The list of nodes in the current page.
-  repeated SearchNode edges = 1;
-  // Information about the pagination state.
-  common.pagination.PageInfo pageInfo = 2;
+// Search results
+message SearchResult {
+    // A list of search results
+    repeated CategorySearchResult results = 1;
 }

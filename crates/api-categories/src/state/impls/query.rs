@@ -2,7 +2,8 @@ use futures_util::TryFutureExt;
 use meilisearch_sdk::search::SearchResults;
 use sellershut_core::{
     categories::{
-        query_categories_server::QueryCategories, Category, Connection, Node, SearchConnection,
+        query_categories_server::QueryCategories, Category, CategorySearchResult, Connection, Node,
+        SearchResult,
     },
     common::{
         pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
@@ -13,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 use crate::{
-    api::entity::CategorySearchResult,
+    api::entity,
     state::{impls::map_err, ApiState},
 };
 
@@ -63,10 +64,10 @@ impl QueryCategories for ApiState {
                     let fut_categories = sqlx::query_as!(
                         Category,
                         "select * FROM category
-                        where idx > $1
-                    order by 
-                        created_at asc
-                    limit $2",
+                            where idx > $1
+                        order by 
+                            created_at asc
+                        limit $2",
                         index,
                         get_count
                     )
@@ -203,269 +204,245 @@ impl QueryCategories for ApiState {
         let max = self.config.query_limit;
 
         // get count
-        match pagination {
-            Pagination::Cursor(pagination) => {
-                // get count
-                let actual_count = pagination::query_count(
-                    max,
-                    &pagination.index.ok_or_else(|| {
-                        tonic::Status::new(tonic::Code::Internal, "missing pagination index")
-                    })?,
-                );
+        if let Pagination::Cursor(pagination) = pagination {
+            // get count
+            let actual_count = pagination::query_count(
+                max,
+                &pagination.index.ok_or_else(|| {
+                    tonic::Status::new(tonic::Code::Internal, "missing pagination index")
+                })?,
+            );
 
-                let get_count: i64 = actual_count as i64 + 1;
+            let get_count: i64 = actual_count as i64 + 1;
 
-                let db_conn = &self.db_pool;
+            let db_conn = &self.db_pool;
 
-                let left_side = CursorBuilder::is_paginating_from_left(&pagination);
-                let cursor_unavailable = CursorBuilder::is_cursor_unavailable(&pagination);
+            let left_side = CursorBuilder::is_paginating_from_left(pagination);
+            let cursor_unavailable = CursorBuilder::is_cursor_unavailable(pagination);
 
-                let (count_on_other_end, categories) = match request.query.as_ref() {
-                    Some(parent_id) => match pagination.cursor_value.as_ref() {
-                        Some(cursor_value) => {
-                            let cursor_value =
-                                cursor_value.cursor_type.as_ref().ok_or_else(|| {
-                                    tonic::Status::new(
-                                        tonic::Code::Internal,
-                                        "Cursor type is not set",
-                                    )
-                                })?;
-                            let cursor = CursorBuilder::decode(&cursor_value);
+            let (count_on_other_end, categories) = match request.query.as_ref() {
+                Some(parent_id) => match pagination.cursor_value.as_ref() {
+                    Some(cursor_value) => {
+                        let cursor_value = cursor_value.cursor_type.as_ref().ok_or_else(|| {
+                            tonic::Status::new(tonic::Code::Internal, "Cursor type is not set")
+                        })?;
+                        let cursor = CursorBuilder::decode(cursor_value);
 
-                            let index = cursor.idx();
+                        let index = cursor.idx();
 
-                            if left_side {
-                                let fut_count = sqlx::query_scalar!(
-                                    "select count (*) from category
+                        if left_side {
+                            let fut_count = sqlx::query_scalar!(
+                                "select count (*) from category
                                     where idx <= $1
                                         and parent_id = $2",
-                                    index,
-                                    parent_id
-                                )
-                                .fetch_one(db_conn)
-                                .map_err(map_err);
+                                index,
+                                parent_id
+                            )
+                            .fetch_one(db_conn)
+                            .map_err(map_err);
 
-                                let fut_categories = sqlx::query_as!(
-                                    Category,
-                                    "select * FROM category
+                            let fut_categories = sqlx::query_as!(
+                                Category,
+                                "select * FROM category
                                     where idx > $1
                                         and parent_id = $2
                                     order by 
                                         created_at asc
                                     limit $3",
-                                    index,
-                                    parent_id,
-                                    get_count
-                                )
-                                .fetch_all(db_conn)
-                                .map_err(map_err);
-
-                                let (count, categories) =
-                                    tokio::try_join!(fut_count, fut_categories)?;
-                                let count = count.ok_or_else(|| {
-                                    tonic::Status::new(
-                                        tonic::Code::Internal,
-                                        "count returned no items",
-                                    )
-                                })?;
-
-                                (count, categories)
-                            } else {
-                                let fut_count = sqlx::query_scalar!(
-                            "select count (*) from category where idx >= $1 and parent_id = $2",
                                 index,
-                                parent_id
-                            )
-                                .fetch_one(db_conn)
-                                .map_err(map_err);
-
-                                let fut_categories = sqlx::query_as!(
-                                    Category,
-                                    "select * FROM category
-                                where idx < $1
-                                    and parent_id = $2
-                            order by 
-                                created_at asc
-                            limit $3",
-                                    index,
-                                    parent_id,
-                                    get_count
-                                )
-                                .fetch_all(db_conn)
-                                .map_err(map_err);
-
-                                let (count, categories) =
-                                    tokio::try_join!(fut_count, fut_categories)?;
-                                let count = count.ok_or_else(|| {
-                                    tonic::Status::new(
-                                        tonic::Code::Internal,
-                                        "count returned no items",
-                                    )
-                                })?;
-                                (count, categories)
-                            }
-                        }
-                        None => {
-                            let categories = sqlx::query_as!(
-                                Category,
-                                "select * FROM category
-                                        where parent_id = $1
-                                    order by
-                                        created_at asc
-                                    limit $2",
                                 parent_id,
                                 get_count
                             )
                             .fetch_all(db_conn)
-                            .await
-                            .map_err(map_err)?;
-                            (get_count - categories.len() as i64, categories)
-                        }
-                    },
-                    None => match pagination.cursor_value.as_ref() {
-                        Some(cursor_value) => {
-                            let cursor_value =
-                                cursor_value.cursor_type.as_ref().ok_or_else(|| {
-                                    tonic::Status::new(
-                                        tonic::Code::Internal,
-                                        "Cursor type is not set",
-                                    )
-                                })?;
-                            let cursor = CursorBuilder::decode(cursor_value);
+                            .map_err(map_err);
 
-                            let index = cursor.idx();
+                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                            let count = count.ok_or_else(|| {
+                                tonic::Status::new(tonic::Code::Internal, "count returned no items")
+                            })?;
 
-                            if left_side {
-                                let fut_count = sqlx::query_scalar!(
-                                    "select count (*) from category
-                                where idx <= $1
-                                    and parent_id is null",
-                                    index,
-                                )
-                                .fetch_one(db_conn)
-                                .map_err(map_err);
+                            (count, categories)
+                        } else {
+                            let fut_count = sqlx::query_scalar!(
+                                "select count (*) from category where idx >= $1 and parent_id = $2",
+                                index,
+                                parent_id
+                            )
+                            .fetch_one(db_conn)
+                            .map_err(map_err);
 
-                                let fut_categories = sqlx::query_as!(
-                                    Category,
-                                    "select * FROM category
-                                where idx > $1
-                                    and parent_id is null
-                            order by 
-                                created_at asc
-                            limit $2",
-                                    index,
-                                    get_count
-                                )
-                                .fetch_all(db_conn)
-                                .map_err(map_err);
-
-                                let (count, categories) =
-                                    tokio::try_join!(fut_count, fut_categories)?;
-                                let count = count.ok_or_else(|| {
-                                    tonic::Status::new(
-                                        tonic::Code::Internal,
-                                        "count returned no items",
-                                    )
-                                })?;
-
-                                (count, categories)
-                            } else {
-                                let fut_count = sqlx::query_scalar!(
-                            "select count (*) from category where idx >= $1 and parent_id is null",
-                            index
-                        )
-                                .fetch_one(db_conn)
-                                .map_err(map_err);
-
-                                let fut_categories = sqlx::query_as!(
-                                    Category,
-                                    "select * FROM category
-                                where idx < $1
-                                    and parent_id is null
-                            order by 
-                                created_at asc
-                            limit $2",
-                                    index,
-                                    get_count
-                                )
-                                .fetch_all(db_conn)
-                                .map_err(map_err);
-
-                                let (count, categories) =
-                                    tokio::try_join!(fut_count, fut_categories)?;
-                                let count = count.ok_or_else(|| {
-                                    tonic::Status::new(
-                                        tonic::Code::Internal,
-                                        "count returned no items",
-                                    )
-                                })?;
-                                (count, categories)
-                            }
-                        }
-                        None => {
-                            let categories = sqlx::query_as!(
+                            let fut_categories = sqlx::query_as!(
                                 Category,
                                 "select * FROM category
-                            where parent_id is null
-                        order by
-                            created_at asc
-                        limit $1",
+                                    where idx < $1
+                                        and parent_id = $2
+                                order by 
+                                    created_at asc
+                                limit $3",
+                                index,
+                                parent_id,
                                 get_count
                             )
                             .fetch_all(db_conn)
-                            .await
-                            .map_err(map_err)?;
-                            (get_count - categories.len() as i64, categories)
+                            .map_err(map_err);
+
+                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                            let count = count.ok_or_else(|| {
+                                tonic::Status::new(tonic::Code::Internal, "count returned no items")
+                            })?;
+                            (count, categories)
+                        }
+                    }
+                    None => {
+                        let categories = sqlx::query_as!(
+                            Category,
+                            "select * FROM category
+                                where parent_id = $1
+                            order by
+                                created_at asc
+                            limit $2",
+                            parent_id,
+                            get_count
+                        )
+                        .fetch_all(db_conn)
+                        .await
+                        .map_err(map_err)?;
+                        (get_count - categories.len() as i64, categories)
+                    }
+                },
+                None => match pagination.cursor_value.as_ref() {
+                    Some(cursor_value) => {
+                        let cursor_value = cursor_value.cursor_type.as_ref().ok_or_else(|| {
+                            tonic::Status::new(tonic::Code::Internal, "Cursor type is not set")
+                        })?;
+                        let cursor = CursorBuilder::decode(cursor_value);
+
+                        let index = cursor.idx();
+
+                        if left_side {
+                            let fut_count = sqlx::query_scalar!(
+                                "select count (*) from category
+                                where idx <= $1
+                                    and parent_id is null",
+                                index,
+                            )
+                            .fetch_one(db_conn)
+                            .map_err(map_err);
+
+                            let fut_categories = sqlx::query_as!(
+                                Category,
+                                "select * FROM category
+                                    where idx > $1
+                                        and parent_id is null
+                                order by 
+                                    created_at asc
+                                limit $2",
+                                index,
+                                get_count
+                            )
+                            .fetch_all(db_conn)
+                            .map_err(map_err);
+
+                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                            let count = count.ok_or_else(|| {
+                                tonic::Status::new(tonic::Code::Internal, "count returned no items")
+                            })?;
+
+                            (count, categories)
+                        } else {
+                            let fut_count = sqlx::query_scalar!(
+                                    "select count (*) from category where idx >= $1 and parent_id is null",
+                                    index
+                                )
+                                .fetch_one(db_conn)
+                                .map_err(map_err);
+
+                            let fut_categories = sqlx::query_as!(
+                                Category,
+                                "select * FROM category
+                                    where idx < $1
+                                        and parent_id is null
+                                order by 
+                                    created_at asc
+                                limit $2",
+                                index,
+                                get_count
+                            )
+                            .fetch_all(db_conn)
+                            .map_err(map_err);
+
+                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                            let count = count.ok_or_else(|| {
+                                tonic::Status::new(tonic::Code::Internal, "count returned no items")
+                            })?;
+                            (count, categories)
+                        }
+                    }
+                    None => {
+                        let categories = sqlx::query_as!(
+                            Category,
+                            "select * FROM category
+                                where parent_id is null
+                            order by
+                                created_at asc
+                            limit $1",
+                            get_count
+                        )
+                        .fetch_all(db_conn)
+                        .await
+                        .map_err(map_err)?;
+                        (get_count - categories.len() as i64, categories)
+                    }
+                },
+            };
+
+            let len = categories.len();
+            let user_count = actual_count as usize;
+
+            let has_more = len > user_count;
+
+            let categories = if has_more {
+                categories.into_iter().take(user_count).collect()
+            } else {
+                categories
+            };
+
+            let connection = Connection {
+                edges: categories
+                    .into_iter()
+                    .map(|category| {
+                        let cursor = CursorBuilder::new(&category.id, category.idx);
+                        Node {
+                            node: Some(category),
+                            cursor: cursor.encode(),
+                        }
+                    })
+                    .collect(),
+                page_info: Some(PageInfo {
+                    has_next_page: {
+                        if cursor_unavailable || left_side {
+                            has_more
+                        } else {
+                            count_on_other_end > 0
                         }
                     },
-                };
+                    has_previous_page: {
+                        if left_side {
+                            count_on_other_end > 0
+                        } else {
+                            has_more
+                        }
+                    },
+                    ..Default::default() // other props calculated by async-graphql
+                }),
+            };
 
-                let len = categories.len();
-                let user_count = actual_count as usize;
-
-                let has_more = len > user_count;
-
-                let categories = if has_more {
-                    categories.into_iter().take(user_count).collect()
-                } else {
-                    categories
-                };
-
-                let connection = Connection {
-                    edges: categories
-                        .into_iter()
-                        .map(|category| {
-                            let cursor = CursorBuilder::new(&category.id, category.idx);
-                            Node {
-                                node: Some(category),
-                                cursor: cursor.encode(),
-                            }
-                        })
-                        .collect(),
-                    page_info: Some(PageInfo {
-                        has_next_page: {
-                            if cursor_unavailable || left_side {
-                                has_more
-                            } else {
-                                count_on_other_end > 0
-                            }
-                        },
-                        has_previous_page: {
-                            if left_side {
-                                count_on_other_end > 0
-                            } else {
-                                has_more
-                            }
-                        },
-                        ..Default::default() // other props calculated by async-graphql
-                    }),
-                };
-
-                Ok(tonic::Response::new(connection))
-            }
-            Pagination::Offset(_) => {
-                unreachable!("need cursor pagination for this request")
-            }
+            Ok(tonic::Response::new(connection))
+        } else {
+            Err(tonic::Status::new(
+                tonic::Code::Internal,
+                "invalid pagination",
+            ))
         }
     }
 
@@ -476,7 +453,7 @@ impl QueryCategories for ApiState {
     async fn search(
         &self,
         request: tonic::Request<SearchQuery>,
-    ) -> Result<tonic::Response<SearchConnection>, tonic::Status> {
+    ) -> Result<tonic::Response<SearchResult>, tonic::Status> {
         let request = request.into_inner();
 
         let pagination = request
@@ -498,7 +475,7 @@ impl QueryCategories for ApiState {
                 .with_offset(data.offset as usize)
                 .build();
 
-            let results: SearchResults<CategorySearchResult> = self
+            let results: SearchResults<entity::CategorySearchResult> = self
                 .meilisearch_index
                 .execute_query(&query)
                 .await
@@ -507,14 +484,20 @@ impl QueryCategories for ApiState {
             let search_results: Vec<_> = results
                 .hits
                 .into_iter()
-                .map(|hit| CategorySearchResult {
-                    id: hit.result.id,
-                    category: hit.result.category,
-                    parent_name: hit.result.parent_name,
+                .map(|hit| {
+                    CategorySearchResult::from(entity::CategorySearchResult {
+                        id: hit.result.id,
+                        category: hit.result.category,
+                        parent_name: hit.result.parent_name,
+                    })
                 })
                 .collect();
 
-            todo!()
+            let result = SearchResult {
+                results: search_results,
+            };
+
+            Ok(tonic::Response::new(result))
         } else {
             Err(tonic::Status::new(
                 tonic::Code::Internal,
@@ -546,12 +529,12 @@ impl ApiState {
             left join category p on c.parent_id = p.id;"
         ).fetch_all(&self.db_pool).await.unwrap();
 
-        let parsed: Vec<CategorySearchResult> = results
+        let parsed: Vec<entity::CategorySearchResult> = results
             .into_iter()
-            .map(|value| CategorySearchResult {
+            .map(|value| entity::CategorySearchResult {
                 id: value.id.clone(),
                 parent_name: value.parent_name,
-                category: crate::api::entity::Category {
+                category: entity::Category {
                     id: value.id,
                     name: value.name,
                     sub_categories: value.sub_categories,

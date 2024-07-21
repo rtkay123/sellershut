@@ -1,7 +1,7 @@
 use sellershut_core::{
     categories::{
         query_categories_server::{QueryCategories, QueryCategoriesServer},
-        Category, Connection, SearchConnection,
+        Category, Connection, SearchResult,
     },
     common::{
         pagination::Cursor,
@@ -48,7 +48,7 @@ impl QueryCategories for CategoryService {
     async fn search(
         &self,
         request: tonic::Request<SearchQuery>,
-    ) -> Result<tonic::Response<SearchConnection>, tonic::Status> {
+    ) -> Result<tonic::Response<SearchResult>, tonic::Status> {
         todo!()
     }
 }
