@@ -54,7 +54,7 @@ async fn graphql_delete(pg_pool: PgPool) -> sqlx::Result<()> {
     let app = TestApp::new(pg_pool).await;
 
     let schema = &app.schema;
-    let id = generate_id();
+    let _id = generate_id();
 
     let res = schema
         .execute(
