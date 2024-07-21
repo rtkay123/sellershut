@@ -1,9 +1,7 @@
 use fake::{Fake, Faker};
 use sellershut_core::{
-    categories::{
-        mutate_categories_server::MutateCategories, query_categories_server::QueryCategories,
-    },
-    common::{id_gen::ID_LENGTH, SearchQuery},
+    categories::query_categories_server::QueryCategories,
+    common::{id_gen::ID_LENGTH, request::SearchQuery},
 };
 use sqlx::PgPool;
 use tonic::IntoRequest;

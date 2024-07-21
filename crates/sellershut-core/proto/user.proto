@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package users;
 
-import "proto/common.proto"; // Importing common.proto for reusability
+import "proto/common/request.proto"; // Importing common.proto for reusability
 
 /// A user
 message User {

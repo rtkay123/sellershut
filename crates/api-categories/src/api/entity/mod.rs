@@ -1,7 +1,8 @@
 use async_graphql::{InputObject, SimpleObject};
+use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
-#[derive(SimpleObject, InputObject, FromRow, Debug)]
+#[derive(SimpleObject, InputObject, FromRow, Debug, Serialize, Deserialize)]
 #[graphql(input_name = "CategoryInput")]
 #[cfg_attr(test, derive(fake::Dummy))]
 pub struct Category {
@@ -19,6 +20,34 @@ pub struct Category {
     pub updated_at: i64,
     #[graphql(skip)]
     pub idx: i32,
+}
+
+#[derive(SimpleObject, FromRow, Debug, Serialize, Deserialize)]
+#[cfg_attr(test, derive(fake::Dummy))]
+pub struct CategorySearchResult {
+    pub id: String,
+    pub parent_name: Option<String>,
+    pub category: Category,
+}
+
+impl From<sellershut_core::categories::CategorySearchResult> for CategorySearchResult {
+    fn from(value: sellershut_core::categories::CategorySearchResult) -> Self {
+        Self {
+            id: value.id,
+            parent_name: value.parent_name,
+            category: value.category.expect("category to be populated").into(),
+        }
+    }
+}
+
+impl From<CategorySearchResult> for sellershut_core::categories::CategorySearchResult {
+    fn from(value: CategorySearchResult) -> Self {
+        Self {
+            id: value.id,
+            parent_name: value.parent_name,
+            category: Some(value.category.into()),
+        }
+    }
 }
 
 impl From<sellershut_core::categories::Category> for Category {

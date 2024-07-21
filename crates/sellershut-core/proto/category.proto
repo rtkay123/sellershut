@@ -2,19 +2,19 @@ syntax = "proto3";
 
 package categories;
 
-import "proto/common.proto";
-
+import "proto/common/pagination.proto";
+import "proto/common/request.proto";
 
 // The Category Query service
 service QueryCategories {
   // gets all categories
-  rpc Categories (common.Paginate) returns (Connection) {}
+  rpc Categories (common.pagination.Cursor) returns (Connection) {}
   // get category by id
-  rpc CategoryById (common.SearchQuery) returns (Category) {}
+  rpc CategoryById (common.request.SearchQuery) returns (Category) {}
   // get subcategories
-  rpc SubCategories (common.SearchQueryOptional) returns (Connection) {}
+  rpc SubCategories (common.request.SearchQueryOptional) returns (Connection) {}
   // search categories
-  rpc Search (common.SearchQuery) returns (Connection) {}
+  rpc Search (common.request.SearchQuery) returns (SearchConnection) {}
 }
 
 // Category Mutation Service
@@ -24,7 +24,7 @@ service MutateCategories {
   // Update a category
   rpc Update (Category) returns (Category) {}
   // Delete a category
-  rpc Delete (common.SearchQuery) returns (common.Empty) {}
+  rpc Delete (common.request.SearchQuery) returns (common.request.Empty) {}
 }
 
 // A category
@@ -39,10 +39,25 @@ message Category {
   int32 idx = 8; // A unique (row number) identifier
 }
 
+// Search result
+message CategorySearchResult {
+  string id = 1; // Category ID
+  optional string parent_name = 2; // Human readable name
+  Category category = 3; // A category
+}
+
 // A response node
 message Node {
     // A category
     Category node = 1;
+    // Pagination cursor
+    string cursor = 2;
+}
+
+// A response node
+message SearchNode {
+    // A category
+    CategorySearchResult node = 1;
     // Pagination cursor
     string cursor = 2;
 }
@@ -52,5 +67,13 @@ message Connection {
   // The list of nodes in the current page.
   repeated Node edges = 1;
   // Information about the pagination state.
-  common.PageInfo pageInfo = 2;
+  common.pagination.PageInfo pageInfo = 2;
+}
+
+// Connection contains a list of Node objects and the pagination information.
+message SearchConnection {
+  // The list of nodes in the current page.
+  repeated SearchNode edges = 1;
+  // Information about the pagination state.
+  common.pagination.PageInfo pageInfo = 2;
 }

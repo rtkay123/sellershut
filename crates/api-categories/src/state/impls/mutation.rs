@@ -2,7 +2,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use sellershut_core::{
     categories::{mutate_categories_server::MutateCategories, Category},
-    common::{id_gen::generate_id, Empty, SearchQuery},
+    common::{
+        id_gen::generate_id,
+        request::{Empty, SearchQuery},
+    },
 };
 
 use crate::state::{impls::map_err, ApiState};

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package common.request;
+
+import "proto/common/pagination.proto";
+
+// An empty message
+message Empty {}
+
+// A message holding an optional string, for string based searching
+message SearchQueryOptional {
+  optional string query = 1; // A parameter sent in with requests
+  // Pagination
+  oneof pagination {
+    // Cursor pagination
+    common.pagination.Cursor cursor = 2;
+    // Offset pagination
+    common.pagination.Offset offset = 3;
+  }
+}
+
+// A message holding a string, for string based searching
+message SearchQuery {
+  string query = 1; // A parameter sent in with requests
+  // Pagination
+  oneof pagination {
+      // Cursor pagination
+    common.pagination.Cursor cursor = 2;
+    // Offset pagination
+    common.pagination.Offset offset = 3;
+  }
+}

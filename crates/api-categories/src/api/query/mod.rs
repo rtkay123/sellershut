@@ -4,7 +4,13 @@ use async_graphql::{
 };
 use sellershut_core::{
     categories::query_categories_server::QueryCategories,
-    common::{Paginate, SearchQueryOptional},
+    common::{
+        pagination::{
+            cursor::{cursor_value::CursorType, CursorValue, Index},
+            Cursor,
+        },
+        request::{search_query_optional::Pagination, SearchQueryOptional},
+    },
 };
 use tonic::IntoRequest;
 use tracing::instrument;
@@ -71,7 +77,7 @@ impl GraphqlQuery {
 
         let search_query = SearchQueryOptional {
             query: parent_id,
-            pagination: Some(pagination),
+            pagination: Some(Pagination::Cursor(pagination)),
         };
 
         let res = service
@@ -107,7 +113,7 @@ impl Params {
         before: Option<String>,
         first: Option<i32>,
         last: Option<i32>,
-    ) -> async_graphql::Result<Paginate> {
+    ) -> async_graphql::Result<Cursor> {
         if (last.is_some() && after.is_some()) || (before.is_some() && first.is_some()) {
             return Err("invalid pagination arguments. Backwards pagination needs 'last' and 'before'. Forward pagination uses 'first' and (optionally) 'after'".into());
         }
@@ -119,11 +125,22 @@ impl Params {
             return Err("Only one or none of 'after' or 'before' should be provided".into());
         }
 
-        Ok(Paginate {
-            after,
-            before,
-            first,
-            last,
+        Ok(Cursor {
+            cursor_value: if after.is_some() || before.is_some() {
+                Some(CursorValue {
+                    cursor_type: Some(match after {
+                        Some(cursor) => CursorType::After(cursor),
+                        None => CursorType::Before(before.expect("before should be defined")),
+                    }),
+                })
+            } else {
+                None
+            },
+            index: Some(if let Some(first) = first {
+                Index::First(first)
+            } else {
+                Index::Last(last.expect("last to be some"))
+            }),
         })
     }
 }

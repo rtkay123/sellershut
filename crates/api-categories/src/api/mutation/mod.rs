@@ -1,6 +1,6 @@
 use async_graphql::{Context, MergedObject, Object, Result};
 use sellershut_core::{
-    categories::mutate_categories_server::MutateCategories, common::SearchQuery,
+    categories::mutate_categories_server::MutateCategories, common::request::SearchQuery,
 };
 use tonic::IntoRequest;
 use tracing::instrument;
