@@ -1,9 +1,12 @@
 use sellershut_core::{
     categories::{
         query_categories_server::{QueryCategories, QueryCategoriesServer},
-        Category, Connection,
+        Category, Connection, SearchConnection,
     },
-    common::{Paginate, SearchQuery, SearchQueryOptional},
+    common::{
+        pagination::Cursor,
+        request::{SearchQuery, SearchQueryOptional},
+    },
 };
 use tonic::transport::Server;
 
@@ -17,7 +20,7 @@ impl QueryCategories for CategoryService {
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     async fn categories(
         &self,
-        request: tonic::Request<Paginate>,
+        request: tonic::Request<Cursor>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         todo!()
     }
@@ -45,7 +48,7 @@ impl QueryCategories for CategoryService {
     async fn search(
         &self,
         request: tonic::Request<SearchQuery>,
-    ) -> Result<tonic::Response<Connection>, tonic::Status> {
+    ) -> Result<tonic::Response<SearchConnection>, tonic::Status> {
         todo!()
     }
 }
