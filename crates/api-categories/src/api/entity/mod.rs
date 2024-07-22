@@ -30,6 +30,19 @@ pub struct CategorySearchResult {
     pub category: Category,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct CategoryWithParent {
+    pub id: String,
+    pub name: String,
+    pub parent_name: Option<String>,
+    pub sub_categories: Vec<String>,
+    pub image_url: Option<String>,
+    pub parent_id: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub idx: i32,
+}
+
 impl From<sellershut_core::categories::CategorySearchResult> for CategorySearchResult {
     fn from(value: sellershut_core::categories::CategorySearchResult) -> Self {
         Self {

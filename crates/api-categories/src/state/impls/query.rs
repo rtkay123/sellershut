@@ -10,11 +10,10 @@ use sellershut_core::{
         request::{search_query_optional::Pagination, SearchQuery, SearchQueryOptional},
     },
 };
-use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 use crate::{
-    api::entity,
+    api::entity::{self, CategoryWithParent},
     state::{impls::map_err, ApiState},
 };
 
@@ -508,20 +507,22 @@ impl QueryCategories for ApiState {
 }
 
 impl ApiState {
+    pub async fn update_index(&self, resource: &Category) {
+        let index = self.meilisearch_index.clone();
+        let pool = self.db_pool.clone();
+        let parent_id = resource.parent_id.clone();
+        tokio::spawn(async move {
+            let results = sqlx::query_as!(
+                    CategoryWithParent,
+                    "select c.name as name, p.name as parent_name, c.id as id, c.sub_categories as sub_categories, c.created_at as created_at, c.updated_at as updated_at, c.idx as idx, c.parent_id as parent_id, c.image_url as image_url
+                    from category c
+                    left join category p on c.parent_id = p.id where p.id = $1;", parent_id
+                ).fetch_one(&pool).await.unwrap();
+            let resource = vec![results];
+            index.add_or_update(&resource, Some("id")).await.unwrap();
+        });
+    }
     pub async fn index_categories(&self) {
-        #[derive(Serialize, Deserialize)]
-        pub struct CategoryWithParent {
-            pub id: String,
-            pub name: String,
-            pub parent_name: Option<String>,
-            pub sub_categories: Vec<String>,
-            pub image_url: Option<String>,
-            pub parent_id: Option<String>,
-            pub created_at: i64,
-            pub updated_at: i64,
-            pub idx: i32,
-        }
-
         let results = sqlx::query_as!(
             CategoryWithParent,
             "select c.name as name, p.name as parent_name, c.id as id, c.sub_categories as sub_categories, c.created_at as created_at, c.updated_at as updated_at, c.idx as idx, c.parent_id as parent_id, c.image_url as image_url

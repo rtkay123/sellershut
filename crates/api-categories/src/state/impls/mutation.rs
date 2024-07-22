@@ -47,6 +47,8 @@ impl MutateCategories for ApiState {
             resp.created_at = duration_since_epoch;
             resp.updated_at = duration_since_epoch;
 
+            self.update_index(&resp).await;
+
             Ok(tonic::Response::new(resp))
         } else {
             Err(tonic::Status::new(
@@ -87,6 +89,8 @@ impl MutateCategories for ApiState {
             let mut resp = category;
             resp.updated_at = duration_since_epoch;
 
+            self.update_index(&resp).await;
+
             Ok(tonic::Response::new(resp))
         } else {
             Err(tonic::Status::new(
@@ -109,6 +113,8 @@ impl MutateCategories for ApiState {
             .execute(&self.db_pool)
             .await
             .map_err(map_err)?;
+
+        self.meilisearch_index.delete_document(&id).await.unwrap();
 
         Ok(tonic::Response::new(Empty::default()))
     }
