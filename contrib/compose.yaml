@@ -25,7 +25,6 @@ services:
   categories-db:
     image: postgres:16.3
     restart: always
-    # hostname: postgreshost
     shm_size: 128mb
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -42,6 +41,51 @@ services:
       timeout: 5s
       retries: 3
 
+  loki:
+    image: grafana/loki:2.9.2
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - sellershut
+
+  promtail:
+    image: grafana/promtail:2.9.2
+    volumes:
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - sellershut
+
+  grafana:
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          type: loki
+          access: proxy 
+          orgId: 1
+          url: http://sellershut:3100
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+        EOF
+        /run.sh
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3000:3000"
+    networks:
+      - sellershut
 
 networks:
   sellershut:
