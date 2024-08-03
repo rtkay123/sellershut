@@ -34,7 +34,7 @@ impl ApiState {
             host: &config.loki_url,
         };
         let mut log_handle = sellershut_services::telemetry::TelemetryBuilder::new("info")
-            .with_loki(&loki_config)
+            .with_loki(&loki_config)?
             .build();
 
         if let Some(task) = std::mem::take(&mut log_handle.loki_task) {

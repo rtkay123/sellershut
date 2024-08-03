@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use tracing_loki::{url::Url, BackgroundTask};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::ServiceError;
+
 /// Telemetry Handle
 #[allow(missing_debug_implementations)]
 pub struct Handle {
@@ -53,23 +55,21 @@ impl TelemetryBuilder {
     }
 
     /// Add Loki
-    pub fn with_loki(self, config: &LokiConfig) -> Self {
+    pub fn with_loki(self, config: &LokiConfig) -> Result<Self, ServiceError> {
         let mut builder = tracing_loki::builder();
         for (key, value) in config.labels.iter() {
-            builder = builder.label(key, value).unwrap();
+            builder = builder.label(key, value)?;
         }
 
         for (key, value) in config.extra_fields.iter() {
-            builder = builder.extra_field(key, value).unwrap();
+            builder = builder.extra_field(key, value)?;
         }
-        let url = builder
-            .build_url(Url::parse("http://127.0.0.1:3100").unwrap())
-            .unwrap();
+        let url = builder.build_url(Url::parse(config.host)?)?;
 
-        Self {
+        Ok(Self {
             layer: self.layer,
             loki: Some(url),
-        }
+        })
     }
 
     /// Initialise logging

@@ -10,3 +10,18 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "telemetry")))]
 /// Telemetry services
 pub mod telemetry;
+
+use thiserror::Error;
+
+/// Errors returned by services
+#[derive(Error, Debug)]
+pub enum ServiceError {
+    #[cfg(feature = "telemetry")]
+    #[error(transparent)]
+    /// When creating the tracing layer
+    Loki(#[from] tracing_loki::Error),
+    #[cfg(feature = "telemetry")]
+    #[error(transparent)]
+    /// When parsing url
+    LokiUrl(#[from] tracing_loki::url::ParseError),
+}
