@@ -41,5 +41,5 @@ dependencies = ["migrate-categories"]
 [tasks.check]
 install_crate = { crate_name = "cargo-hack", binary = "cargo", test_arg = ["hack", "--help"] }
 command = "cargo"
-dependencies = ["migrate-categories"]
+dependencies = ["migrate"]
 args = [ "hack", "--feature-powerset", "check" ]
