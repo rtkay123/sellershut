@@ -1,6 +1,9 @@
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
+[config]
+default_to_workspace = false
+
 [tasks.format]
 install_crate = "rustfmt"
 command = "cargo"
@@ -21,22 +24,22 @@ args = ["test"]
 dependencies = ["clean"]
 
 [tasks.dev-categories]
-workspace = false
 command = "cargo"
 args = [ "watch", "-c", "-x", "run --bin sellershut-api-categories" ]
 
 [tasks.migrate-categories]
 install_crate = { crate_name = "sqlx-cli", binary = "sqlx", test_arg = "--help" }
-workspace = false
 command = "sqlx"
 args = [ "migrate", "run", "--source",  "./crates/api-categories/migrations" ]
 env_files = [
   "./crates/api-categories/.env",
 ]
 
+[tasks.migrate]
+dependencies = ["migrate-categories"]
+
 [tasks.check]
 install_crate = { crate_name = "cargo-hack", binary = "cargo", test_arg = ["hack", "--help"] }
-workspace = false
 command = "cargo"
 dependencies = ["migrate-categories"]
 args = [ "hack", "--feature-powerset", "check" ]
