@@ -58,7 +58,7 @@ jobs:
         run: |
           cp crates/api-categories/.env.example crates/api-categories/.env
       - name: run migrations
-        run: cargo make migrate-categories
+        run: cargo make migrate
       - name: cargo test
         run: cargo test --workspace --all-features --all-targets
       - name: cargo test --doc
