@@ -36,7 +36,7 @@ impl TestApp {
 
         // Setup tracing. Once.
         TRACING.call_once(|| {
-            sellershut_services::telemetry::Handle::initialise();
+            sellershut_services::telemetry::TelemetryBuilder::new("info").build();
         });
 
         let client = Client::new(

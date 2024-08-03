@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::{
+    fmt::Display,
     net::{Ipv6Addr, SocketAddr},
     str::FromStr,
     sync::Arc,
@@ -29,6 +30,8 @@ pub struct Configuration {
     pub meilisearch_api_key: String,
     /// Meilisearch index
     pub meilisearch_index: String,
+    /// Loki URL
+    pub loki_url: String,
 }
 
 #[derive(Deserialize, Debug, Copy, Clone)]
@@ -54,6 +57,8 @@ impl Configuration {
 
         let db_dsn = env_var("DATABASE_URL");
 
+        let loki_url = env_var("LOKI_URL");
+
         let db_pool_max_size = env_var("DATABASE_POOL_MAX_SIZE")
             .parse::<u32>()
             .expect("Unable to parse the value of the DATABASE_POOL_MAX_SIZE environment variable. Please make sure it is a valid unsigned 32-bit integer.");
@@ -74,6 +79,7 @@ impl Configuration {
             meilisearch_url,
             meilisearch_api_key,
             meilisearch_index,
+            loki_url,
         })
     }
 
@@ -95,6 +101,19 @@ impl FromStr for Environment {
                 s
             )),
         }
+    }
+}
+
+impl Display for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Environment::Development => "development",
+                Environment::Production => "production",
+            }
+        )
     }
 }
 
