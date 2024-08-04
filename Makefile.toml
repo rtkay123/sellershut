@@ -42,5 +42,6 @@ args = [ "hack", "--feature-powerset", "check" ]
 [tasks.doc]
 toolchain = "nightly"
 env = { "RUSTDOCFLAGS" = "--cfg docsrs" }
+dependencies = ["migrate"]
 command = "cargo"
 args = ["doc", "--all-features", "--no-deps"]
