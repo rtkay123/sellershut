@@ -51,3 +51,9 @@ install_crate = { crate_name = "cargo-hack", binary = "cargo", test_arg = ["hack
 command = "cargo"
 dependencies = ["migrate"]
 args = [ "hack", "--feature-powerset", "check" ]
+
+[tasks.doc]
+toolchain = "nightly"
+env = { "RUSTDOCFLAGS" = "--cfg docsrs" }
+command = "cargo"
+args = ["doc", "--all-features", "--open"]
