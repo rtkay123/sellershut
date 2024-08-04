@@ -11,6 +11,7 @@ message Group {
     string description = 3; // Description or details about the group
     int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
     int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+    repeated Role roles = 6; // A list of roles available
 }
 
 // A user
@@ -20,7 +21,7 @@ message User {
     string email = 3;         // Email address of the user
     optional string name = 4; // Optional full name of the user
     optional string avatar = 5; // Optional URL to the user's avatar image
-    optional string group_id = 6; // Type of the user (Individual or Group)
+    optional Group group = 6; // An optional group this user is part of
     int64 created_at = 7;     // Timestamp (millisecond precision) when the user was created
     int64 updated_at = 8;     // Timestamp (millisecond precision) when the user was last updated
 }
@@ -30,6 +31,7 @@ message Role {
     int32 id = 1;            // Unique identifier for the user
     string name = 2;      // Username chosen by the user
     optional string description = 3;         // Email address of the user
+    repeated Permission permissions = 4; // A list of permissions for this role
     int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
     int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
 }
@@ -41,16 +43,4 @@ message Permission {
     optional string description = 3;         // Email address of the user
     int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
     int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
-}
-
-// Role Permission
-message RolePermission {
-    Role role = 1; // A role
-    Permission permission = 2; // A permission
-}
-
-// User Role
-message UserRole {
-    User user = 1; // A user
-    Role role = 2; // A role
 }

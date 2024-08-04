@@ -11,7 +11,7 @@ create table "user" (
     username varchar(25) unique not null,
     email varchar(50) unique not null,
     name varchar(255), -- optional name
-    avatar varchar, -- optional avatar
+    avatar text, -- optional avatar
     group_id varchar(21), -- foreign key to groups
     created_at bigint not null, -- millisecond precision timestamp for creation
     updated_at bigint not null, -- millisecond precision timestamp for last update
@@ -43,7 +43,7 @@ create table role_permission (
 );
 
 create table user_role (
-    user_id varchar(50) not null,
+    user_id varchar(21) not null,
     role_id integer not null,
     group_id varchar(21) null,
     primary key (user_id, role_id, group_id),
