@@ -10,6 +10,29 @@ concurrency:
 name: check
 jobs:
   doc:
+    services:
+      categories-db:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      users-db:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6543:5432
     runs-on: ubuntu-latest
     name: nightly / doc
     steps:
@@ -18,7 +41,7 @@ jobs:
           submodules: true
       - name: install nightly
         uses: dtolnay/rust-toolchain@nightly
-      - name: install Protoc
+      - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,17 +73,6 @@ jobs:
           --health-retries 5
         ports:
           - 6543:5432
-      meilisearch:
-        image: getmeili/meilisearch
-        env:
-          MEILI_MASTER_KEY: masterKey
-        options: >-
-          --health-cmd "curl -f 'http://localhost:7700'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 7700:7700
     runs-on: ubuntu-latest
     name: ubuntu / stable / features
     steps:
@@ -69,7 +81,7 @@ jobs:
           submodules: true
       - name: install stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install Protoc
+      - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
