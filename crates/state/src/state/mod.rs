@@ -19,7 +19,7 @@ pub struct ApiState {
 }
 
 impl ApiState {
-    pub async fn initialise() -> Result<Self, StateError> {
+    pub async fn initialise(crate_name: &str) -> Result<Self, StateError> {
         let config = Configuration::new();
 
         #[cfg(feature = "rt-tokio")]
@@ -29,6 +29,7 @@ impl ApiState {
 
             let mut labels = HashMap::new();
             labels.insert("environment".into(), config.env.to_string());
+            labels.insert("application".into(), crate_name.to_string());
 
             let mut extra_fields = HashMap::new();
             extra_fields.insert("pid".into(), format!("{}", process::id()));
