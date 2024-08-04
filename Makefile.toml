@@ -43,4 +43,4 @@ args = [ "hack", "--feature-powerset", "check" ]
 toolchain = "nightly"
 env = { "RUSTDOCFLAGS" = "--cfg docsrs" }
 command = "cargo"
-args = ["doc", "--all-features", "--open"]
+args = ["doc", "--all-features", "--no-deps"]
