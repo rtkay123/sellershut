@@ -41,6 +41,25 @@ services:
       timeout: 5s
       retries: 3
 
+  users-db:
+    image: postgres:16.3
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      PGDATA: /data/postgres
+    ports:
+      - "6543:5432"
+    networks:
+      - sellershut
+    volumes:
+      - postgres:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   loki:
     image: grafana/loki:2.9.2
     ports:
