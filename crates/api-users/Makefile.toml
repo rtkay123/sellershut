@@ -1,0 +1,7 @@
+[tasks.migrate]
+install_crate = { crate_name = "sqlx-cli", binary = "sqlx", test_arg = "--help" }
+command = "sqlx"
+args = [ "migrate", "run" ]
+env_files = [
+  ".env",
+]
