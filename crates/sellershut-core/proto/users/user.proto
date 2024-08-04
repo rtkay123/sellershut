@@ -9,12 +9,12 @@ message Group {
     string id = 1;         // Unique identifier for the group
     string name = 2; // Name of the group
     string description = 3; // Description or details about the group
-    int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
-    int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+    int64 created_at = 4;     // Timestamp (millisecond precision) when the group was created
+    int64 updated_at = 5;     // Timestamp (millisecond precision) when the group was last updated
     repeated Role roles = 6; // A list of roles available
 }
 
-// A user
+// User
 message User {
     string id = 1;            // Unique identifier for the user
     string username = 2;      // Username chosen by the user
@@ -26,21 +26,21 @@ message User {
     int64 updated_at = 8;     // Timestamp (millisecond precision) when the user was last updated
 }
 
-// A user's role
+// Roles
 message Role {
-    int32 id = 1;            // Unique identifier for the user
-    string name = 2;      // Username chosen by the user
-    optional string description = 3;         // Email address of the user
+    int32 id = 1;            // Id
+    string name = 2;      // Name
+    optional string description = 3;         // Description
     repeated Permission permissions = 4; // A list of permissions for this role
-    int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
-    int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+    int64 created_at = 5;     // Timestamp (millisecond precision) when the role was created
+    int64 updated_at = 6;     // Timestamp (millisecond precision) when the role was last updated
 }
 
-// A user's role
+// Permissions
 message Permission {
-    int32 id = 1;            // Unique identifier for the user
-    string name = 2;      // Username chosen by the user
-    optional string description = 3;         // Email address of the user
-    int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
-    int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+    int32 id = 1;            // Id
+    string name = 2;      // Name
+    optional string description = 3;         // Description
+    int64 created_at = 4;     // Timestamp (millisecond precision) when the permission was created
+    int64 updated_at = 5;     // Timestamp (millisecond precision) when the permission was last updated
 }
