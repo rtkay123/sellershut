@@ -16,8 +16,8 @@ impl Entity {
     fn path(&self) -> String {
         match self {
             Entity::Category => "proto/category.proto",
-            Entity::User => "proto/user.proto",
-            Entity::Oauth => "proto/oauth.proto",
+            Entity::User => "proto/users/user.proto",
+            Entity::Oauth => "proto/users/oauth.proto",
         }
         .into()
     }

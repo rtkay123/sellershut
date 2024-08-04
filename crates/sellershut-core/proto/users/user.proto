@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package users;
+
+import "proto/common/request.proto"; // Importing common.proto for reusability
+
+// A group for users
+message Group {
+    string id = 1;         // Unique identifier for the group
+    string name = 2; // Name of the group
+    string description = 3; // Description or details about the group
+    int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
+    int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+}
+
+// A user
+message User {
+    string id = 1;            // Unique identifier for the user
+    string username = 2;      // Username chosen by the user
+    string email = 3;         // Email address of the user
+    optional string name = 4; // Optional full name of the user
+    optional string avatar = 5; // Optional URL to the user's avatar image
+    optional string group_id = 6; // Type of the user (Individual or Group)
+    int64 created_at = 7;     // Timestamp (millisecond precision) when the user was created
+    int64 updated_at = 8;     // Timestamp (millisecond precision) when the user was last updated
+}
+
+// A user's role
+message Role {
+    int32 id = 1;            // Unique identifier for the user
+    string name = 2;      // Username chosen by the user
+    optional string description = 3;         // Email address of the user
+    int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
+    int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+}
+
+// A user's role
+message Permission {
+    int32 id = 1;            // Unique identifier for the user
+    string name = 2;      // Username chosen by the user
+    optional string description = 3;         // Email address of the user
+    int64 created_at = 4;     // Timestamp (millisecond precision) when the user was created
+    int64 updated_at = 5;     // Timestamp (millisecond precision) when the user was last updated
+}
+
+// Role Permission
+message RolePermission {
+    Role role = 1; // A role
+    Permission permission = 2; // A permission
+}
+
+// User Role
+message UserRole {
+    User user = 1; // A user
+    Role role = 2; // A role
+}
