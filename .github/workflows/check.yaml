@@ -1,0 +1,85 @@
+permissions:
+  contents: read
+on:
+  push:
+    branches: [master]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+name: check
+jobs:
+  doc:
+    runs-on: ubuntu-latest
+    name: nightly / doc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: install nightly
+        uses: dtolnay/rust-toolchain@nightly
+      - name: install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: install cargo-make
+        run: cargo install cargo-make
+      - name: cargo doc
+        run: cargo make doc
+  hack:
+    services:
+      categories-db:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      users-db:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6543:5432
+      meilisearch:
+        image: getmeili/meilisearch
+        env:
+          MEILI_MASTER_KEY: masterKey
+        options: >-
+          --health-cmd "curl -f 'http://localhost:7700'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7700:7700
+    runs-on: ubuntu-latest
+    name: ubuntu / stable / features
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: install stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: install cargo-make
+        run: cargo install cargo-make
+      - name: prepare environment
+        run: |
+          for api in categories users
+          do
+            cp crates/api-${api}/.env.example crates/api-${api}/.env
+          done
+      - name: check
+        run: cargo make check
