@@ -13,7 +13,7 @@ jobs:
   required:
     runs-on: ubuntu-latest
     services:
-      postgres:
+      categories-db:
         image: postgres
         env:
           POSTGRES_PASSWORD: password
@@ -24,6 +24,17 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      users-db:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6543:5432
       meilisearch:
         image: getmeili/meilisearch
         env:
@@ -56,7 +67,10 @@ jobs:
         run: cargo install cargo-make
       - name: prepare environment
         run: |
-          cp crates/api-categories/.env.example crates/api-categories/.env
+          for api in categories users
+          do
+            cp crates/api-${api}/.env.example crates/api-${api}/.env
+          done
       - name: run migrations
         run: cargo make migrate
       - name: cargo test
