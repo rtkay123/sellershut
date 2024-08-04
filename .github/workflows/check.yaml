@@ -47,6 +47,12 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: install cargo-make
         run: cargo install cargo-make
+      - name: prepare environment
+        run: |
+          for api in categories users
+          do
+            cp crates/api-${api}/.env.example crates/api-${api}/.env
+          done
       - name: cargo doc
         run: cargo make doc
   hack:
