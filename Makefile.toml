@@ -35,8 +35,16 @@ env_files = [
   "./crates/api-categories/.env",
 ]
 
+[tasks.migrate-users]
+install_crate = { crate_name = "sqlx-cli", binary = "sqlx", test_arg = "--help" }
+command = "sqlx"
+args = [ "migrate", "run", "--source",  "./crates/api-users/migrations" ]
+env_files = [
+  "./crates/api-users/.env",
+]
+
 [tasks.migrate]
-dependencies = ["migrate-categories"]
+dependencies = ["migrate-categories", "migrate-users"]
 
 [tasks.check]
 install_crate = { crate_name = "cargo-hack", binary = "cargo", test_arg = ["hack", "--help"] }
