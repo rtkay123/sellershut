@@ -9,11 +9,9 @@ anyhow.workspace = true
 axum = { workspace = true, features = ["macros", "http2", "ws"] }
 async-graphql = { workspace = true, features = ["playground"] }
 async-graphql-axum.workspace = true
-async-nats.workspace = true
 dotenvy.workspace = true
 sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-users", "rpc-server-users", "serde"] }
-sellershut-services = { workspace = true, features = ["telemetry"] }
-sellershut-state = { workspace = true, features = ["meilisearch", "postgres", "rt-tokio"] }
+sellershut-services = { workspace = true, features = ["meilisearch", "postgres", "rt-tokio", "telemetry"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "tls-rustls"] }

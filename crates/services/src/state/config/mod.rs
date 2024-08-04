@@ -10,7 +10,6 @@ mod postgres;
 #[cfg(feature = "postgres")]
 pub use postgres::*;
 
-use serde::Deserialize;
 use std::{
     fmt::Display,
     net::{Ipv6Addr, SocketAddr},
@@ -18,9 +17,14 @@ use std::{
     sync::Arc,
 };
 
-pub type Config = Arc<Configuration>;
+pub(crate) type Config = Arc<Configuration>;
 
-#[derive(Deserialize)]
+#[cfg_attr(
+    any(feature = "postgres", feature = "meilisearch"),
+    derive(serde::Deserialize)
+)]
+/// Api Configuration
+#[derive(Debug)]
 pub struct Configuration {
     /// The environment in which to run the application.
     pub env: Environment,
@@ -34,14 +38,22 @@ pub struct Configuration {
     /// Query limit
     pub query_limit: i32,
     #[cfg(feature = "meilisearch")]
+    /// Meilisearch Config
     pub meilisearch: MeilisearchConfig,
     /// Loki URL
     pub loki_url: String,
 }
 
-#[derive(Deserialize, Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
+#[cfg_attr(
+    any(feature = "postgres", feature = "meilisearch"),
+    derive(serde::Deserialize)
+)]
+/// Runtime environment
 pub enum Environment {
+    /// Development
     Development,
+    /// Production
     Production,
 }
 
@@ -131,6 +143,7 @@ impl Display for Environment {
     }
 }
 
+/// Read environment variable
 pub fn env_var(name: &str) -> String {
     std::env::var(name)
         .map_err(|e| format!("{}: {}", name, e))

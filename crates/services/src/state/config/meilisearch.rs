@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
+/// MeilisearchConfig
 pub struct MeilisearchConfig {
     /// Meilisearch URL
     pub meilisearch_url: String,

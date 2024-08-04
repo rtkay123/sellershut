@@ -1,5 +1,10 @@
+/// Config
+pub mod config;
+
+/// Service Error Types
 pub mod error;
 
+use config::Configuration;
 use error::StateError;
 #[cfg(feature = "meilisearch")]
 use meilisearch_sdk::{client::Client, indexes::Index};
@@ -7,29 +12,32 @@ use meilisearch_sdk::{client::Client, indexes::Index};
 #[cfg(feature = "postgres")]
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
-use crate::config::{Config, Configuration};
-
-#[derive(Clone)]
-pub struct ApiState {
-    pub config: Config,
+#[derive(Clone, Debug)]
+/// Service state
+pub struct ServiceState {
+    /// App configuration
+    pub config: std::sync::Arc<Configuration>,
     #[cfg(feature = "postgres")]
+    /// Postgres connection pool
     pub db_pool: PgPool,
     #[cfg(feature = "meilisearch")]
+    /// meilisearch Index
     pub meilisearch_index: Index,
 }
 
-impl ApiState {
-    pub async fn initialise(crate_name: &str) -> Result<Self, StateError> {
+impl ServiceState {
+    /// Initialise state
+    pub async fn initialise(_crate_name: &str) -> Result<Self, StateError> {
         let config = Configuration::new();
 
-        #[cfg(feature = "rt-tokio")]
+        #[cfg(all(feature = "rt-tokio", feature = "telemetry"))]
         {
-            use sellershut_services::telemetry::LokiConfig;
+            use crate::telemetry::*;
             use std::{collections::HashMap, process};
 
             let mut labels = HashMap::new();
             labels.insert("environment".into(), config.env.to_string());
-            labels.insert("application".into(), crate_name.to_string());
+            labels.insert("application".into(), _crate_name.to_string());
 
             let mut extra_fields = HashMap::new();
             extra_fields.insert("pid".into(), format!("{}", process::id()));
@@ -38,7 +46,7 @@ impl ApiState {
                 extra_fields: &extra_fields,
                 host: &config.loki_url,
             };
-            let mut log_handle = sellershut_services::telemetry::TelemetryBuilder::new("info")
+            let mut log_handle = TelemetryBuilder::new("info")
                 .with_loki(&loki_config)?
                 .build();
 

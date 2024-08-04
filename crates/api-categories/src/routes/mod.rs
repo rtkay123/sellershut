@@ -3,7 +3,7 @@ mod health;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQL, GraphQLSubscription};
 use axum::{response::Html, routing::get, Router};
-use sellershut_state::config::Environment;
+use sellershut_services::state::config::Environment;
 
 use crate::api::ApiSchema;
 

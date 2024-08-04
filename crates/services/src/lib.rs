@@ -11,6 +11,10 @@
 /// Telemetry services
 pub mod telemetry;
 
+/// State
+#[cfg_attr(docsrs, doc(cfg(any(feature = "meilisearch", feature = "postgres"))))]
+pub mod state;
+
 use thiserror::Error;
 
 /// Errors returned by services
