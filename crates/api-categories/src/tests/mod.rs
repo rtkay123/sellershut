@@ -4,6 +4,7 @@ mod health_check;
 
 use axum::{body::Body, http::Request, http::Response, Router};
 use meilisearch_sdk::client::Client;
+use sellershut_state::config::{env_var, Configuration, Environment};
 use sqlx::PgPool;
 use std::sync::Once;
 use tower::util::ServiceExt;
@@ -11,10 +12,7 @@ use tower::util::ServiceExt;
 use crate::{
     api::{ApiSchema, ApiSchemaBuilder},
     routes::router,
-    state::{
-        config::{env_var, Configuration},
-        ApiState,
-    },
+    state::ApiState,
 };
 
 static TRACING: Once = Once::new();
@@ -47,20 +45,17 @@ impl TestApp {
 
         let index = client.index("test_categories");
 
-        let state = ApiState {
+        let state = ApiState(sellershut_state::state::ApiState {
             config: Configuration::new(),
             db_pool: pool,
             meilisearch_index: index,
-        };
+        });
 
         let schema = ApiSchemaBuilder::build(state.clone());
 
         tracing::debug!("Running migrations");
 
-        let router = router(
-            schema.clone(),
-            crate::state::config::Environment::Development,
-        );
+        let router = router(schema.clone(), Environment::Development);
         Self {
             router,
             state,

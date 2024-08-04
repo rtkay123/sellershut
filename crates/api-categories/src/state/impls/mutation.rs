@@ -40,7 +40,7 @@ impl MutateCategories for ApiState {
                 category.parent_id,
                 duration_since_epoch,
                 duration_since_epoch,
-            ).execute(&self.db_pool).await.map_err(map_err)?;
+            ).execute(&self.0.db_pool).await.map_err(map_err)?;
 
             let mut resp = category;
             resp.id = id;
@@ -84,7 +84,7 @@ impl MutateCategories for ApiState {
                 category.image_url,
                 category.parent_id,
                 duration_since_epoch,
-            ).execute(&self.db_pool).await.map_err(map_err)?;
+            ).execute(&self.0.db_pool).await.map_err(map_err)?;
 
             let mut resp = category;
             resp.updated_at = duration_since_epoch;
@@ -110,11 +110,11 @@ impl MutateCategories for ApiState {
         let id = request.into_inner().query;
 
         sqlx::query!("delete from category where id = $1", id)
-            .execute(&self.db_pool)
+            .execute(&self.0.db_pool)
             .await
             .map_err(map_err)?;
 
-        self.meilisearch_index.delete_document(&id).await.unwrap();
+        self.0.meilisearch_index.delete_document(&id).await.unwrap();
 
         Ok(tonic::Response::new(Empty::default()))
     }

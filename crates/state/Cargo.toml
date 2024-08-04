@@ -1,0 +1,18 @@
+[package]
+name = "sellershut-state"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+meilisearch-sdk = { optional = true, workspace = true }
+sellershut-services = { workspace = true, features = ["telemetry"] }
+sqlx = { optional = true, workspace = true }
+thiserror.workspace = true
+tokio = { optional = true, workspace = true }
+
+[features]
+default = []
+meilisearch = ["dep:meilisearch-sdk"]
+postgres = ["sqlx/postgres"]
+rt-tokio = ["dep:tokio"]

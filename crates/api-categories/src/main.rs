@@ -13,12 +13,12 @@ async fn main() -> anyhow::Result<()> {
     let state = ApiState::initialise().await?;
     state.index_categories().await;
 
-    let env = state.config.env;
+    let env = state.0.config.env;
 
     // derive clone ok
     let schema = ApiSchemaBuilder::build(state.clone());
 
-    let listener = TcpListener::bind(&state.config.listen_address).await?;
+    let listener = TcpListener::bind(&state.0.config.listen_address).await?;
 
     let router = router(schema, env);
 

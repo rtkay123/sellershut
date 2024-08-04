@@ -1,3 +1,15 @@
+#[cfg(feature = "meilisearch")]
+mod meilisearch;
+
+#[cfg(feature = "meilisearch")]
+pub use meilisearch::*;
+
+#[cfg(feature = "postgres")]
+mod postgres;
+
+#[cfg(feature = "postgres")]
+pub use postgres::*;
+
 use serde::Deserialize;
 use std::{
     fmt::Display,
@@ -12,24 +24,17 @@ pub type Config = Arc<Configuration>;
 pub struct Configuration {
     /// The environment in which to run the application.
     pub env: Environment,
-
     /// The address to listen on.
     pub listen_address: SocketAddr,
     /// The port to listen on.
     pub app_port: u16,
-
-    /// The DSN for the database. Currently, only PostgreSQL is supported.
-    pub db_dsn: String,
-    /// The maximum number of connections for the PostgreSQL pool.
-    pub db_pool_max_size: u32,
+    /// Postgres Config
+    #[cfg(feature = "postgres")]
+    pub postgres: PostgresConfig,
     /// Query limit
     pub query_limit: i32,
-    /// Meilisearch URL
-    pub meilisearch_url: String,
-    /// Meilisearch api-key
-    pub meilisearch_api_key: String,
-    /// Meilisearch index
-    pub meilisearch_index: String,
+    #[cfg(feature = "meilisearch")]
+    pub meilisearch: MeilisearchConfig,
     /// Loki URL
     pub loki_url: String,
 }
@@ -55,38 +60,47 @@ impl Configuration {
             .parse::<i32>()
             .expect("Max results to return per query");
 
-        let db_dsn = env_var("DATABASE_URL");
-
         let loki_url = env_var("LOKI_URL");
 
-        let db_pool_max_size = env_var("DATABASE_POOL_MAX_SIZE")
-            .parse::<u32>()
-            .expect("Unable to parse the value of the DATABASE_POOL_MAX_SIZE environment variable. Please make sure it is a valid unsigned 32-bit integer.");
-
         let listen_address = SocketAddr::from((Ipv6Addr::UNSPECIFIED, app_port));
-
-        let meilisearch_url = env_var("MEILISEARCH_URL");
-        let meilisearch_index = env_var("MEILISEARCH_INDEX");
-        let meilisearch_api_key = env_var("MEILISEARCH_APIKEY");
 
         Arc::new(Configuration {
             env,
             listen_address,
             app_port,
-            db_dsn,
-            db_pool_max_size,
+            #[cfg(feature = "postgres")]
+            postgres: {
+                let db_pool_max_size = env_var("DATABASE_POOL_MAX_SIZE")
+            .parse::<u32>()
+            .expect("Unable to parse the value of the DATABASE_POOL_MAX_SIZE environment variable. Please make sure it is a valid unsigned 32-bit integer.");
+                let db_dsn = env_var("DATABASE_URL");
+                PostgresConfig {
+                    db_pool_max_size,
+                    db_dsn,
+                }
+            },
             query_limit,
-            meilisearch_url,
-            meilisearch_api_key,
-            meilisearch_index,
+            #[cfg(feature = "meilisearch")]
+            meilisearch: {
+                let meilisearch_url = env_var("MEILISEARCH_URL");
+                let meilisearch_index = env_var("MEILISEARCH_INDEX");
+                let meilisearch_api_key = env_var("MEILISEARCH_APIKEY");
+                MeilisearchConfig {
+                    meilisearch_url,
+                    meilisearch_index,
+                    meilisearch_api_key,
+                }
+            },
+
             loki_url,
         })
     }
 
     /// Sets the database DSN.
     /// This method is used in tests to override the database DSN.
+    #[cfg(feature = "postgres")]
     pub fn set_dsn(&mut self, db_dsn: String) {
-        self.db_dsn = db_dsn
+        self.postgres.db_dsn = db_dsn
     }
 }
 

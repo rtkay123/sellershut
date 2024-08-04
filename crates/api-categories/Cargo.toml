@@ -14,6 +14,7 @@ futures-util.workspace = true
 meilisearch-sdk.workspace = true
 sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde"] }
 sellershut-services = { workspace = true, features = ["telemetry"] }
+sellershut-state = { workspace = true, features = ["meilisearch", "postgres", "rt-tokio"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "tls-rustls"] }

@@ -27,8 +27,9 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<Cursor>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
+        let state = &self.0;
         let pagination = request.into_inner();
-        let max = self.config.query_limit;
+        let max = state.config.query_limit;
 
         // get count
         let actual_count = pagination::query_count(
@@ -40,7 +41,7 @@ impl QueryCategories for ApiState {
 
         let get_count: i64 = actual_count as i64 + 1;
 
-        let db_conn = &self.db_pool;
+        let db_conn = &self.0.db_pool;
 
         let (count_on_other_end, categories) = if let Some(cursor_value) =
             pagination.cursor_value.as_ref()
@@ -176,10 +177,11 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<SearchQuery>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
+        let state = &self.0;
         let id = request.into_inner().query;
 
         let category = sqlx::query_as!(Category, "select * from category where id = $1", id)
-            .fetch_one(&self.db_pool)
+            .fetch_one(&state.db_pool)
             .await
             .map_err(map_err)?;
 
@@ -194,13 +196,14 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<SearchQueryOptional>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
+        let state = &self.0;
         let request = request.into_inner();
 
         let pagination = request
             .pagination
             .as_ref()
             .ok_or_else(|| tonic::Status::new(tonic::Code::Internal, "pagination is missing"))?;
-        let max = self.config.query_limit;
+        let max = state.config.query_limit;
 
         // get count
         if let Pagination::Cursor(pagination) = pagination {
@@ -214,7 +217,7 @@ impl QueryCategories for ApiState {
 
             let get_count: i64 = actual_count as i64 + 1;
 
-            let db_conn = &self.db_pool;
+            let db_conn = &state.db_pool;
 
             let left_side = CursorBuilder::is_paginating_from_left(pagination);
             let cursor_unavailable = CursorBuilder::is_cursor_unavailable(pagination);
@@ -453,6 +456,7 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<SearchQuery>,
     ) -> Result<tonic::Response<SearchResult>, tonic::Status> {
+        let state = &self.0;
         let request = request.into_inner();
 
         let pagination = request
@@ -461,10 +465,10 @@ impl QueryCategories for ApiState {
             .ok_or_else(|| tonic::Status::new(tonic::Code::Internal, "missing pagination data"))?;
         if let sellershut_core::common::request::search_query::Pagination::Offset(data) = pagination
         {
-            let max = self.config.query_limit;
+            let max = self.0.config.query_limit;
             let query = &request.query;
 
-            let query = meilisearch_sdk::search::SearchQuery::new(&self.meilisearch_index)
+            let query = meilisearch_sdk::search::SearchQuery::new(&state.meilisearch_index)
                 .with_query(query.as_ref())
                 .with_limit(if data.limit > max || data.limit == 0 {
                     max as usize
@@ -474,7 +478,7 @@ impl QueryCategories for ApiState {
                 .with_offset(data.offset as usize)
                 .build();
 
-            let results: SearchResults<entity::CategorySearchResult> = self
+            let results: SearchResults<entity::CategorySearchResult> = state
                 .meilisearch_index
                 .execute_query(&query)
                 .await
@@ -508,8 +512,9 @@ impl QueryCategories for ApiState {
 
 impl ApiState {
     pub async fn update_index(&self, resource: &Category) {
-        let index = self.meilisearch_index.clone();
-        let pool = self.db_pool.clone();
+        let state = &self.0;
+        let index = state.meilisearch_index.clone();
+        let pool = state.db_pool.clone();
         let parent_id = resource.parent_id.clone();
         tokio::spawn(async move {
             let results = sqlx::query_as!(
@@ -522,13 +527,15 @@ impl ApiState {
             index.add_or_update(&resource, Some("id")).await.unwrap();
         });
     }
+
     pub async fn index_categories(&self) {
+        let state = &self.0;
         let results = sqlx::query_as!(
             CategoryWithParent,
             "select c.name as name, p.name as parent_name, c.id as id, c.sub_categories as sub_categories, c.created_at as created_at, c.updated_at as updated_at, c.idx as idx, c.parent_id as parent_id, c.image_url as image_url
             from category c
             left join category p on c.parent_id = p.id;"
-        ).fetch_all(&self.db_pool).await.unwrap();
+        ).fetch_all(&state.db_pool).await.unwrap();
 
         let parsed: Vec<entity::CategorySearchResult> = results
             .into_iter()
@@ -548,7 +555,8 @@ impl ApiState {
             })
             .collect();
 
-        self.meilisearch_index
+        state
+            .meilisearch_index
             .add_documents(&parsed, Some("id"))
             .await
             .unwrap();
