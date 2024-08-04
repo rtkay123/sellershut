@@ -34,7 +34,7 @@ services:
     networks:
       - sellershut
     volumes:
-      - postgres:/data/postgres
+      - categories-db:/data/postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -53,7 +53,7 @@ services:
     networks:
       - sellershut
     volumes:
-      - postgres:/data/postgres
+      - users-db:/data/postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -110,5 +110,6 @@ networks:
   sellershut:
 
 volumes:
-  postgres:
+  users-db:
+  categories-db:
   meili_data:
