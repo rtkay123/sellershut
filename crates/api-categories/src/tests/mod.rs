@@ -1,5 +1,3 @@
-mod api;
-mod db;
 mod health_check;
 
 use axum::{body::Body, http::Request, http::Response, Router};

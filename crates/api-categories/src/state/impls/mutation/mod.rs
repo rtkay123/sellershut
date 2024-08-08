@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use sellershut_core::{

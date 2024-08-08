@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use futures_util::TryFutureExt;
 use meilisearch_sdk::search::SearchResults;
 use sellershut_core::{

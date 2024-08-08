@@ -34,3 +34,4 @@ async fn graphql_categories(pg_pool: PgPool) -> sqlx::Result<()> {
 
     Ok(())
 }
+

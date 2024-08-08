@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use async_graphql::{
     connection::{Connection, Edge, EmptyFields},
     Context, MergedObject, Object, Result,
