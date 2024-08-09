@@ -4,6 +4,12 @@ mod meilisearch;
 #[cfg(feature = "meilisearch")]
 pub use meilisearch::*;
 
+#[cfg(feature = "nats")]
+mod nats;
+
+#[cfg(feature = "nats")]
+pub use nats::*;
+
 #[cfg(feature = "postgres")]
 mod postgres;
 
@@ -42,6 +48,8 @@ pub struct Configuration {
     pub meilisearch: MeilisearchConfig,
     /// Loki URL
     pub loki_url: String,
+    #[cfg(feature = "nats")]
+    pub nats: NatsConfig,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -103,7 +111,20 @@ impl Configuration {
                     meilisearch_api_key,
                 }
             },
-
+            #[cfg(feature = "nats")]
+            nats: {
+                NatsConfig {
+                    nats_url: env_var("NATS_URL"),
+                    jetstream_name: env_var("JETSTREAM_NAME"),
+                    jetstream_subjects: env_var("JETSTREAM_SUBJECTS")
+                        .split('/')
+                        .map(String::from)
+                        .collect::<Vec<_>>(),
+                    jetstream_max_bytes: env_var("JETSTREAM_MAX_BYTES")
+                        .parse::<i64>()
+                        .expect("JETSTREAM_MAX_BYTES to be i64"),
+                }
+            },
             loki_url,
         })
     }

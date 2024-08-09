@@ -4,6 +4,9 @@ pub mod config;
 /// Service Error Types
 pub mod error;
 
+#[cfg(feature = "nats")]
+use async_nats::jetstream::stream::Config;
+
 use config::Configuration;
 use error::StateError;
 #[cfg(feature = "meilisearch")]
@@ -73,6 +76,22 @@ impl ServiceState {
 
         #[cfg(feature = "meilisearch")]
         let index = client.index(&config.meilisearch.meilisearch_index);
+
+        #[cfg(feature = "nats")]
+        let client = async_nats::connect(&config.nats.nats_url).await.unwrap();
+        #[cfg(feature = "nats")]
+        let jetstream = async_nats::jetstream::new(client);
+
+        #[cfg(feature = "nats")]
+        jetstream
+            .get_or_create_stream(Config {
+                name: config.nats.jetstream_name.to_string(),
+                subjects: config.nats.jetstream_subjects.clone(),
+                max_bytes: config.nats.jetstream_max_bytes,
+                ..Default::default()
+            })
+            .await
+            .unwrap();
 
         Ok(Self {
             config,
