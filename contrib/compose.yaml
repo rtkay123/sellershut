@@ -68,6 +68,17 @@ services:
     networks:
       - sellershut
 
+  nats:
+    image: nats:2.10.18-alpine
+    entrypoint: nats-server
+    command: --js
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+    networks:
+      - sellershut
+
   promtail:
     image: grafana/promtail:2.9.2
     volumes:
