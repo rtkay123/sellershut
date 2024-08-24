@@ -3,5 +3,7 @@ name = "sellershut"
 version = "0.1.0"
 edition = "2021"
 publish = false
+license.workspace = true
 
 [dependencies]
+sellershut-core = { workspace = true }

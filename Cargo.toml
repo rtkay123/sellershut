@@ -3,3 +3,10 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
+prost = "0.13.1"
+sellershut-core = { path = "crates/sellershut-core" }
+tonic = "0.12.1"
+
+[workspace.package]
+license = "AGPL-3.0-only"
+repository = "https://git.kanjala.com/sellershut"
