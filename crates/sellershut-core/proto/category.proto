@@ -3,6 +3,7 @@ syntax = "proto3";
 package categories;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 import "proto/common/pagination.proto";
 
 // A category
@@ -48,9 +49,6 @@ message GetSubCategoriesRequest {
     common.pagination.Cursor pagination = 2; // Pagination Properties
 }
 
-// An empty message
-message Empty {}
-
 // The Category Query service
 service QueryCategories {
   // gets all categories
@@ -68,5 +66,5 @@ service MutateCategories {
   // Update a category
   rpc Update (Category) returns (Category) {}
   // Delete a category
-  rpc Delete (DeleteCategoryRequest) returns (Empty) {}
+  rpc Delete (DeleteCategoryRequest) returns (google.protobuf.Empty) {}
 }

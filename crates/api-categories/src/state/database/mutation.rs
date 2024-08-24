@@ -1,5 +1,6 @@
-use sellershut_core::categories::{
-    mutate_categories_server::MutateCategories, Category, DeleteCategoryRequest, Empty,
+use sellershut_core::{
+    categories::{mutate_categories_server::MutateCategories, Category, DeleteCategoryRequest},
+    google::protobuf::Empty,
 };
 
 use crate::state::ApiState;
