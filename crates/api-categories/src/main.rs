@@ -1,7 +1,10 @@
 mod state;
 
 use axum::{routing::get, Router};
-use sellershut_core::categories::query_categories_server::QueryCategoriesServer;
+use sellershut_core::categories::{
+    mutate_categories_server::MutateCategoriesServer,
+    query_categories_server::QueryCategoriesServer,
+};
 use state::{multiplex::GrpcMultiplexLayer, ApiState};
 use tonic::transport::Server;
 use tower::ServiceExt;
@@ -17,7 +20,8 @@ async fn main() {
 
     let grpc = Server::builder()
         .layer(GrpcMultiplexLayer::new(web))
-        .add_service(QueryCategoriesServer::new(service));
+        .add_service(QueryCategoriesServer::new(service.clone()))
+        .add_service(MutateCategoriesServer::new(service));
 
     let addr = "[::1]:50051".parse().unwrap();
 
