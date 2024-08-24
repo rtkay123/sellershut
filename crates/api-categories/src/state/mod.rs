@@ -22,8 +22,8 @@ impl ApiState {
 
         let state = ServiceState::initialise(env!("CARGO_CRATE_NAME")).await?;
 
-        //        #[cfg(not(test))]
-        //        sqlx::migrate!("./migrations").run(&state.db_pool).await?;
+        #[cfg(not(test))]
+        sqlx::migrate!("./migrations").run(&state.db_pool).await?;
 
         Ok(Self(state))
     }
