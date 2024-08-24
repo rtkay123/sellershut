@@ -110,6 +110,7 @@ name = "api-search"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "core-services",
  "meilisearch-sdk",
  "rust-bert",
  "sellershut-core",

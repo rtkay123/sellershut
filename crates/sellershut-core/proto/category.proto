@@ -2,9 +2,10 @@ syntax = "proto3";
 
 package categories;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 import "proto/common/pagination.proto";
+import "proto/common/utils.proto";
 
 // A category
 message Category {
@@ -19,10 +20,10 @@ message Category {
 
 // A response node
 message Node {
-    // A category
-    Category node = 1;
-    // Pagination cursor
-    string cursor = 2;
+  // A category
+  Category node = 1;
+  // Pagination cursor
+  string cursor = 2;
 }
 
 // Connection contains a list of Node objects and the pagination information.
@@ -35,18 +36,23 @@ message Connection {
 
 // Delete a category
 message DeleteCategoryRequest {
-    string id = 1; // The ID of the category to delete
+  string id = 1; // The ID of the category to delete
 }
 
 // Get a category
 message GetCategoryRequest {
-    string id = 1; // The ID of the category to retrieve
+  string id = 1; // The ID of the category to retrieve
 }
 
 // Get sub categories
 message GetSubCategoriesRequest {
-    optional string id = 1; // The optional ID of the category to retrieve. Skip to return top-level categories
-    common.pagination.Cursor pagination = 2; // Pagination Properties
+  optional string id = 1; // The optional ID of the category to retrieve. Skip to return top-level categories
+  common.pagination.Cursor pagination = 2; // Pagination Properties
+}
+
+message CategoryMutation {
+  common.utils.MutationType mutationType = 1;
+  Category category = 2;
 }
 
 // The Category Query service

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package common.utils;
+
+// Specifying mutation event type for entities
+enum MutationType {
+  // An item was created
+  CREATE = 0;
+  // An item was updated
+  UPDATE = 1;
+  // An item was deleted
+  DELETE = 2;
+}
