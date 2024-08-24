@@ -1,0 +1,27 @@
+[package]
+name = "core-services"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+async-nats = { optional = true, workspace = true }
+serde = { optional = true, workspace = true }
+sqlx = { optional = true, workspace = true }
+thiserror.workspace = true
+tokio = { optional = true, workspace = true }
+tracing = { workspace = true, optional = true }
+tracing-loki = { version = "0.2.5", default-features = false, optional = true }
+tracing-subscriber = { version = "0.3.18", optional = true }
+
+[features]
+default = []
+nats = ["dep:async-nats", "serde/derive"]
+postgres = ["sqlx/postgres", "serde/derive"]
+rt-tokio = ["dep:tokio"]
+telemetry = ["tracing", "tracing-loki/compat-0-2-1", "tracing-loki/rustls", "tracing-subscriber/env-filter"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

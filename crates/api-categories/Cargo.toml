@@ -7,5 +7,9 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+core-services = { workspace = true, features = ["nats", "postgres", "rt-tokio", "telemetry"] }
+dotenvy.workspace = true
 sellershut-core = { workspace = true, features = ["categories", "serde"] }
+sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "tls-rustls"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing.workspace = true
