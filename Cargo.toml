@@ -5,16 +5,26 @@ resolver = "2"
 [workspace.dependencies]
 anyhow = "1.0.86"
 async-nats = "0.35.1"
+axum = "0.7.5"
 dotenvy = "0.15.7"
 prost = "0.13.1"
 sellershut-core = { path = "crates/sellershut-core" }
 core-services = { path = "crates/core-services" }
+futures-util = "0.3.30"
+http = "1.1.0"
+http-body = "1.0.1"
+http-body-util = "0.1.2"
+hyper = "1.4.1"
+hyper-util = "0.1.7"
+pin-project = "1.1.5"
 serde = "1.0.209"
-sqlx = "0.8.1"
+sqlx = { version = "0.8.1", default-features = false }
 thiserror = "1.0.63"
 tokio = "1.39.3"
 tonic = "0.12.1"
+tonic-reflection = "0.12.1"
 tonic-types = "0.12.1"
+tower = "0.5.0"
 tracing = "0.1.40"
 
 [workspace.package]

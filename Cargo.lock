@@ -72,11 +72,22 @@ name = "api-categories"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "core-services",
  "dotenvy",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "hyper 1.4.1",
+ "hyper-util",
+ "pin-project",
  "sellershut-core",
  "sqlx",
  "tokio",
+ "tonic",
+ "tonic-reflection",
+ "tower 0.5.0",
  "tracing",
 ]
 
@@ -191,6 +202,8 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.1",
  "http-body-util",
+ "hyper 1.4.1",
+ "hyper-util",
  "itoa",
  "matchit",
  "memchr",
@@ -199,10 +212,15 @@ dependencies = [
  "pin-project-lite",
  "rustversion",
  "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_urlencoded",
  "sync_wrapper 1.0.1",
- "tower",
+ "tokio",
+ "tower 0.4.13",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -223,6 +241,7 @@ dependencies = [
  "sync_wrapper 0.1.2",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -1241,7 +1260,7 @@ dependencies = [
  "pin-project-lite",
  "socket2",
  "tokio",
- "tower",
+ "tower 0.4.13",
  "tower-service",
  "tracing",
 ]
@@ -2628,6 +2647,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_path_to_error"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af99884400da37c88f5e9146b7f1fd0fbcae8f6eec4e9da38b67d05486f814a6"
+dependencies = [
+ "itoa",
+ "serde",
+]
+
+[[package]]
 name = "serde_repr"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2857,9 +2886,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "sqlx-core",
- "sqlx-mysql",
  "sqlx-postgres",
- "sqlx-sqlite",
  "syn",
  "tempfile",
  "tokio",
@@ -2897,7 +2924,6 @@ dependencies = [
  "percent-encoding",
  "rand",
  "rsa",
- "serde",
  "sha1",
  "sha2",
  "smallvec",
@@ -2962,7 +2988,6 @@ dependencies = [
  "libsqlite3-sys",
  "log",
  "percent-encoding",
- "serde",
  "serde_urlencoded",
  "sqlx-core",
  "tracing",
@@ -3269,7 +3294,7 @@ dependencies = [
  "socket2",
  "tokio",
  "tokio-stream",
- "tower",
+ "tower 0.4.13",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -3286,6 +3311,19 @@ dependencies = [
  "prost-build",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b742c83ad673e9ab5b4ce0981f7b9e8932be9d60e8682cbf9120494764dbc173"
+dependencies = [
+ "prost 0.13.1",
+ "prost-types 0.13.1",
+ "tokio",
+ "tokio-stream",
+ "tonic",
 ]
 
 [[package]]
@@ -3329,6 +3367,20 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tower"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36b837f86b25d7c0d7988f00a54e74739be6477f2aac6201b8f429a7569991b7"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "pin-project-lite",
+ "sync_wrapper 0.1.2",
+ "tower-layer",
+ "tower-service",
 ]
 
 [[package]]

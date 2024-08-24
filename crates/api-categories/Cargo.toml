@@ -7,9 +7,20 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+axum.workspace = true
 core-services = { workspace = true, features = ["nats", "postgres", "rt-tokio", "telemetry"] }
 dotenvy.workspace = true
-sellershut-core = { workspace = true, features = ["categories", "serde"] }
+futures-util.workspace = true
+http.workspace = true
+http-body.workspace = true
+http-body-util.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+pin-project.workspace = true
+sellershut-core = { workspace = true, features = ["rpc-client-categories", "rpc-server-categories", "serde"] }
 sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "tls-rustls"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true
+tonic-reflection.workspace = true
+tower = { workspace = true, features = ["steer", "util"] }
 tracing.workspace = true
