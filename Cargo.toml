@@ -3,9 +3,12 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
+anyhow = "1.0.86"
 prost = "0.13.1"
 sellershut-core = { path = "crates/sellershut-core" }
 serde = "1.0.209"
+thiserror = "1.0.63"
+tokio = "1.39.3"
 tonic = "0.12.1"
 tonic-types = "0.12.1"
 

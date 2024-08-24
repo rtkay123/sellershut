@@ -1,11 +1,12 @@
 [package]
-name = "api-categories"
+name = "api-search"
 version = "0.1.0"
 edition = "2021"
-publish = false
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+meilisearch-sdk = "0.27.0"
 sellershut-core = { workspace = true, features = ["categories", "serde"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
