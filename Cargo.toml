@@ -5,7 +5,9 @@ resolver = "2"
 [workspace.dependencies]
 prost = "0.13.1"
 sellershut-core = { path = "crates/sellershut-core" }
+serde = "1.0.209"
 tonic = "0.12.1"
+tonic-types = "0.12.1"
 
 [workspace.package]
 license = "AGPL-3.0-only"

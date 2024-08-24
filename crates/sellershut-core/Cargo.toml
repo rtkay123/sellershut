@@ -2,11 +2,21 @@
 name = "sellershut-core"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-prost.workspace = true
-prost-types = "0.13.1"
-tonic.workspace = true
+prost = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+tonic = { workspace = true, optional = true }
+tonic-types = { workspace = true, optional = true }
+
+[features]
+default = []
+categories = ["tonic"]
+rpc-client-categories = ["categories", "dep:tonic-types"]
+rpc-server-categories = ["categories", "dep:tonic-types"]
+serde = ["dep:serde", "serde/derive"]
+tonic = ["dep:tonic", "dep:prost"]
 
 [build-dependencies]
 tonic-build = "0.12.1"
