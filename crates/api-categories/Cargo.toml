@@ -1,9 +1,9 @@
 [package]
-name = "sellershut"
+name = "api-categories"
 version = "0.1.0"
 edition = "2021"
 publish = false
 license.workspace = true
 
 [dependencies]
-sellershut-core = { workspace = true, features = ["categories"] }
+sellershut-core = { workspace = true, features = ["categories", "serde"] }
