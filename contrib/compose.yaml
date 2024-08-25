@@ -69,6 +69,7 @@ services:
       - sellershut
 
   grafana:
+    image: grafana/grafana:11.1.0
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -92,16 +93,29 @@ services:
           editable: false
         EOF
         /run.sh
-    image: grafana/grafana:11.1.0
     ports:
       - "3000:3000"
     networks:
       - sellershut
 
+  cache:
+    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
+    ulimits:
+      memlock: -1
+    ports:
+      - "6379:6379"
+    # For better performance, consider `host` mode instead `port` to avoid docker NAT.
+    # `host` mode is NOT currently supported in Swarm Mode.
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#network_mode
+    # network_mode: "host"
+    volumes:
+      - dragonflydata:/data
+
 networks:
   sellershut:
 
 volumes:
-  users-db:
   categories-db:
+  dragonflydata:
   meili_data:
+  users-db:

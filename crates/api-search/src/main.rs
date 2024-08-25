@@ -1,12 +1,12 @@
+#[cfg(feature = "nlp")]
 mod nlp;
 
 use anyhow::Result;
-use nlp::ZeroshotClassifier;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     #[cfg(feature = "nlp")]
-    let (_handle, classifier) = ZeroshotClassifier::spawn();
+    let (_handle, classifier) = nlp::ZeroshotClassifier::spawn();
 
     #[cfg(feature = "nlp")]
     {

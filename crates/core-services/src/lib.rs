@@ -12,8 +12,16 @@
 pub mod telemetry;
 
 /// State
-#[cfg_attr(docsrs, doc(cfg(any(feature = "meilisearch", feature = "postgres"))))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(any(feature = "meilisearch", feature = "postgres", feature = "cache")))
+)]
 pub mod state;
+
+/// State
+#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
+#[cfg(feature = "cache")]
+pub mod cache;
 
 use thiserror::Error;
 

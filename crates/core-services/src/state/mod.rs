@@ -13,6 +13,9 @@ use error::StateError;
 #[cfg(feature = "postgres")]
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
+#[cfg(feature = "cache")]
+use crate::cache::RedisPool;
+
 #[derive(Clone, Debug)]
 /// Service state
 pub struct ServiceState {
@@ -21,6 +24,9 @@ pub struct ServiceState {
     #[cfg(feature = "postgres")]
     /// Postgres connection pool
     pub db_pool: PgPool,
+    #[cfg(feature = "cache")]
+    /// Cache
+    pub cache: RedisPool,
 }
 
 impl ServiceState {
@@ -79,10 +85,15 @@ impl ServiceState {
             .await
             .unwrap();
 
+        #[cfg(feature = "cache")]
+        let cache = crate::cache::new_redis_pool_helper().await;
+
         Ok(Self {
             config,
             #[cfg(feature = "postgres")]
             db_pool: pool,
+            #[cfg(feature = "cache")]
+            cache,
         })
     }
 }
