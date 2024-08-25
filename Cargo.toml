@@ -13,12 +13,6 @@ prost = "0.13.1"
 sellershut-core = { path = "crates/sellershut-core" }
 core-services = { path = "crates/core-services" }
 futures-util = "0.3.30"
-http = "1.1.0"
-http-body = "1.0.1"
-http-body-util = "0.1.2"
-hyper = "1.4.1"
-hyper-util = "0.1.7"
-pin-project = "1.1.5"
 serde = "1.0.209"
 serde_json = "1.0.127"
 sqlx = { version = "0.8.1", default-features = false }

@@ -1,5 +1,4 @@
 mod database;
-pub mod multiplex;
 
 use std::path::Path;
 
