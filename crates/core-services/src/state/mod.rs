@@ -77,17 +77,6 @@ impl ServiceState {
         #[cfg(feature = "nats")]
         let jetstream = async_nats::jetstream::new(client);
 
-        #[cfg(feature = "nats")]
-        jetstream
-            .get_or_create_stream(Config {
-                name: config.nats.jetstream_name.to_string(),
-                subjects: config.nats.jetstream_subjects.clone(),
-                max_bytes: config.nats.jetstream_max_bytes,
-                ..Default::default()
-            })
-            .await
-            .unwrap();
-
         #[cfg(feature = "cache")]
         let cache = crate::cache::new_redis_pool_helper().await;
 

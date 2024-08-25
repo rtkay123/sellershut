@@ -10,12 +10,9 @@ mod postgres;
 #[cfg(feature = "postgres")]
 pub use postgres::*;
 
-use std::{
-    fmt::Display,
-    net::{Ipv6Addr, SocketAddr},
-    str::FromStr,
-    sync::Arc,
-};
+#[cfg(feature = "api")]
+use std::net::{Ipv6Addr, SocketAddr};
+use std::{fmt::Display, str::FromStr, sync::Arc};
 
 pub(crate) type Config = Arc<Configuration>;
 
@@ -26,13 +23,16 @@ pub struct Configuration {
     /// The environment in which to run the application.
     pub env: Environment,
     /// The address to listen on.
+    #[cfg(feature = "api")]
     pub listen_address: SocketAddr,
     /// The port to listen on.
+    #[cfg(feature = "api")]
     pub app_port: u16,
     /// Postgres Config
     #[cfg(feature = "postgres")]
     pub postgres: PostgresConfig,
     /// Query limit
+    #[cfg(feature = "api")]
     pub query_limit: i32,
     /// Loki URL
     pub loki_url: String,
@@ -57,21 +57,26 @@ impl Configuration {
             .parse::<Environment>()
             .expect("Unable to parse the value of the APP_ENVIRONMENT environment variable. Please make sure it is either \"development\" or \"production\".");
 
+        #[cfg(feature = "api")]
         let app_port = env_var("PORT")
             .parse::<u16>()
             .expect("Unable to parse the value of the PORT environment variable. Please make sure it is a valid unsigned 16-bit integer");
 
+        #[cfg(feature = "api")]
         let query_limit = env_var("QUERY_LIMIT")
             .parse::<i32>()
             .expect("Max results to return per query");
 
         let loki_url = env_var("LOKI_URL");
 
+        #[cfg(feature = "api")]
         let listen_address = SocketAddr::from((Ipv6Addr::UNSPECIFIED, app_port));
 
         Arc::new(Configuration {
             env,
+            #[cfg(feature = "api")]
             listen_address,
+            #[cfg(feature = "api")]
             app_port,
             #[cfg(feature = "postgres")]
             postgres: {
@@ -84,19 +89,17 @@ impl Configuration {
                     db_dsn,
                 }
             },
+            #[cfg(feature = "api")]
             query_limit,
             #[cfg(feature = "nats")]
             nats: {
+                let jetstream_config = env_var("JETSTREAM_CONFIG");
                 NatsConfig {
                     nats_url: env_var("NATS_URL"),
-                    jetstream_name: env_var("JETSTREAM_NAME"),
-                    jetstream_subjects: env_var("JETSTREAM_SUBJECTS")
-                        .split('/')
-                        .map(String::from)
-                        .collect::<Vec<_>>(),
-                    jetstream_max_bytes: env_var("JETSTREAM_MAX_BYTES")
-                        .parse::<i64>()
-                        .expect("JETSTREAM_MAX_BYTES to be i64"),
+                    stream: {
+                        serde_json::from_str(&jetstream_config)
+                            .expect("failed to parse jetstream_config")
+                    },
                 }
             },
             loki_url,

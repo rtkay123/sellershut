@@ -1,8 +1,12 @@
+mod state;
+
 use async_nats::jetstream::{self, consumer::PullConsumer, stream, Context};
 use futures_util::{future::join_all, StreamExt};
+use state::ApiState;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let state = ApiState::initialise().await?;
     let client = async_nats::connect("localhost:4222").await?;
     let jetstream = async_nats::jetstream::new(client);
 
