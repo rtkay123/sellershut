@@ -5,7 +5,7 @@ pub mod config;
 pub mod error;
 
 #[cfg(feature = "nats")]
-use async_nats::jetstream::stream::Config;
+use async_nats::jetstream::{stream::Config, Context};
 
 use config::Configuration;
 use error::StateError;
@@ -27,6 +27,9 @@ pub struct ServiceState {
     #[cfg(feature = "cache")]
     /// Cache
     pub cache: RedisPool,
+    #[cfg(feature = "nats")]
+    /// Jetstream context
+    pub jetstream_context: Context,
 }
 
 impl ServiceState {
@@ -94,6 +97,8 @@ impl ServiceState {
             db_pool: pool,
             #[cfg(feature = "cache")]
             cache,
+            #[cfg(feature = "nats")]
+            jetstream_context: jetstream,
         })
     }
 }

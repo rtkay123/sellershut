@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    info!(addr = ?addr, "listening on");
+    info!(addr = ?addr, "listening");
 
     axum::serve(listener, Shared::new(service)).await.unwrap();
 

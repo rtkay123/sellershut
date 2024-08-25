@@ -15,6 +15,10 @@ impl MutateCategories for ApiState {
         request: tonic::Request<Category>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
         // send message to cache update and search index update
+        self.0
+            .jetstream_context
+            .publish("categories", "data".into())
+            .await;
         todo!()
     }
 
