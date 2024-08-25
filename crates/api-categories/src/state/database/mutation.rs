@@ -14,6 +14,7 @@ impl MutateCategories for ApiState {
         &self,
         request: tonic::Request<Category>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
+        // send message to cache update and search index update
         todo!()
     }
 

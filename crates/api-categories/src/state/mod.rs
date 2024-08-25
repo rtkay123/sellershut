@@ -4,13 +4,6 @@ pub mod multiplex;
 use std::path::Path;
 
 use core_services::state::ServiceState;
-use sellershut_core::{
-    categories::{
-        query_categories_server::QueryCategories, Category, Connection, GetCategoryRequest,
-        GetSubCategoriesRequest,
-    },
-    common::pagination,
-};
 
 #[derive(Clone)]
 pub struct ApiState(pub ServiceState);
