@@ -5,8 +5,8 @@ create table category (
     sub_categories varchar(21)[] not null, -- array of ids
     image_url varchar, -- optional image url
     parent_id varchar(21) references category(id) on delete cascade, -- foreign key to self
-    created_at timestampz not null, -- timestamp for creation
-    updated_at timestampz not null -- timestamp for last update
+    created_at timestamptz not null, -- timestamp for creation
+    updated_at timestamptz not null -- timestamp for last update
 );
 
 create index idx_category_id on category (id);
