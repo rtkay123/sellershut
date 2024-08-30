@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
             let stream = env_var(&create_var("STREAM_NAME"));
             let subject = env_var(&create_var("STREAM_SUBJECTS"));
             let stream_max_bytes = env_var(&create_var("STREAM_MAX_BYTES"));
-            let consumer = format!("CONSUMER_{service}");
+            let consumer = format!("CONSUMER_{}",env!("CARGO_PKG_NAME"));
             debug!(stream = stream, subjects = subject, "configuring subjects");
 
             js.get_or_create_stream(stream::Config {
@@ -39,8 +39,8 @@ async fn main() -> Result<()> {
                 debug!(subjects = subject, consumer = consumer, "creating consumer");
                 stream
                     .create_consumer(consumer::pull::Config {
-                        durable_name: Some(consumer.clone().into()),
-                        name: Some(consumer.into()),
+                        durable_name: Some(consumer.to_string()),
+                        name: Some(consumer),
                         ..Default::default()
                     })
                     .await
