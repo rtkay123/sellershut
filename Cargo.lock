@@ -486,6 +486,7 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -8,6 +8,7 @@ use futures_util::{
     StreamExt, TryFutureExt,
 };
 use state::ApiState;
+use tracing::{debug, error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,14 +16,16 @@ async fn main() -> Result<()> {
 
     let js = state.0.jetstream_context.clone();
 
-    let services: Vec<_> = ["CATEGORIES"]
-        .iter()
+    let services: Vec<_> = env_var("EVENT_PUBLISHING_SERVICES")
+        .split(',')
         .map(|service| {
+            let service = service.to_uppercase();
             let create_var = |s: &str| format!("{service}_{s}");
             let stream = env_var(&create_var("STREAM_NAME"));
             let subject = env_var(&create_var("STREAM_SUBJECTS"));
             let stream_max_bytes = env_var(&create_var("STREAM_MAX_BYTES"));
             let consumer = format!("CONSUMER_{service}");
+            debug!(stream = stream, subjects = subject, "configuring subjects");
 
             js.get_or_create_stream(stream::Config {
                 name: stream.to_string(),
@@ -33,6 +36,7 @@ async fn main() -> Result<()> {
             })
             .map_err(|e| anyhow!(e.to_string()))
             .and_then(|stream| async move {
+                debug!(subjects = subject, consumer = consumer, "creating consumer");
                 stream
                     .create_consumer(consumer::pull::Config {
                         durable_name: Some(consumer.clone().into()),
@@ -50,7 +54,9 @@ async fn main() -> Result<()> {
         tokio::spawn(handle_message(consumer, state))
     });
 
-    tokio::spawn(join_all(consumers)).await;
+    if let Err(e) = tokio::spawn(join_all(consumers)).await {
+        error!("{e}");
+    }
 
     Ok(())
 }
@@ -63,7 +69,7 @@ async fn handle_message(
     let mut messages = consumer.messages().await?;
 
     while let Some(Ok(message)) = messages.next().await {
-        println!("Got message {:?}", message);
+        info!("Got message {:?}", message);
         if let Err(e) = message.ack().await {
             eprintln!("{e}");
         }

@@ -1,12 +1,6 @@
 use std::path::Path;
 
-use anyhow::anyhow;
-use async_nats::jetstream::{self, stream};
-use core_services::state::{config::env_var, ServiceState};
-use futures_util::{
-    future::{join_all, try_join_all},
-    StreamExt, TryFutureExt,
-};
+use core_services::state::ServiceState;
 
 #[derive(Clone)]
 pub struct ApiState(pub ServiceState);
@@ -20,19 +14,4 @@ impl ApiState {
 
         Ok(Self(state))
     }
-}
-
-async fn handle_message(
-    consumer: jetstream::consumer::Consumer<jetstream::consumer::pull::Config>,
-) -> anyhow::Result<()> {
-    // Get messages
-    let mut messages = consumer.messages().await?;
-
-    while let Some(Ok(message)) = messages.next().await {
-        if let Err(e) = message.ack().await {
-            eprintln!("{e}");
-        }
-    }
-
-    Ok(())
 }
