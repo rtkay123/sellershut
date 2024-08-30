@@ -1,6 +1,7 @@
 use async_graphql::{Context, MergedObject, Object, Result};
 use sellershut_core::categories::{
-    mutate_categories_server::MutateCategories, DeleteCategoryRequest,
+    mutate_categories_server::MutateCategories, CategoryEvent, DeleteCategoryRequest,
+    UpsertCategoryRequest,
 };
 use tonic::IntoRequest;
 use tracing::instrument;
@@ -19,7 +20,12 @@ impl GraphqlMutation {
     async fn create(&self, ctx: &Context<'_>, input: Category) -> Result<Category> {
         let service = ctx.data::<ApiState>()?;
 
-        let request = sellershut_core::categories::Category::from(input);
+        let category = Some(sellershut_core::categories::Category::from(input));
+        let request = UpsertCategoryRequest {
+            category,
+            event: CategoryEvent::Create.into(),
+        };
+
         let res = service.create(request.into_request()).await?.into_inner();
 
         Ok(Category::from(res))
@@ -29,7 +35,12 @@ impl GraphqlMutation {
     async fn update(&self, ctx: &Context<'_>, input: Category) -> Result<Category> {
         let service = ctx.data::<ApiState>()?;
 
-        let request = sellershut_core::categories::Category::from(input);
+        let category = Some(sellershut_core::categories::Category::from(input));
+        let request = UpsertCategoryRequest {
+            category,
+            event: CategoryEvent::Update.into(),
+        };
+
         let res = service.update(request.into_request()).await?.into_inner();
 
         Ok(Category::from(res))
@@ -41,7 +52,7 @@ impl GraphqlMutation {
 
         let req = DeleteCategoryRequest {
             id,
-            ..Default::default()
+            event: CategoryEvent::Delete.into(),
         };
 
         let _res = service.delete(req.into_request()).await?.into_inner();

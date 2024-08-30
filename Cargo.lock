@@ -84,6 +84,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-axum",
+ "async-nats",
  "axum",
  "core-services",
  "dotenvy",

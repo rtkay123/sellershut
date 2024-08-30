@@ -5,7 +5,7 @@ pub mod config;
 pub mod error;
 
 #[cfg(feature = "nats")]
-use async_nats::jetstream::{stream::Config, Context};
+use async_nats::jetstream::Context;
 
 use config::Configuration;
 use error::StateError;

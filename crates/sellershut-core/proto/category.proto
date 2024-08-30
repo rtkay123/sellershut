@@ -37,6 +37,13 @@ message Connection {
 // Delete a category
 message DeleteCategoryRequest {
   string id = 1; // The ID of the category to delete
+  CategoryEvent event = 2; // Type of event
+}
+
+// Update a category
+message UpsertCategoryRequest {
+  Category category = 1; // Payload
+  CategoryEvent event = 2; // Type of event
 }
 
 // Get a category
@@ -55,6 +62,12 @@ message CategoryMutation {
   Category category = 2;
 }
 
+enum CategoryEvent {
+  CREATE = 0;
+  UPDATE = 1;
+  DELETE = 2;
+}
+
 // The Category Query service
 service QueryCategories {
   // gets all categories
@@ -68,9 +81,9 @@ service QueryCategories {
 // Category Mutation Service
 service MutateCategories {
   // Create a category
-  rpc Create (Category) returns (Category) {}
+  rpc Create (UpsertCategoryRequest) returns (Category) {}
   // Update a category
-  rpc Update (Category) returns (Category) {}
+  rpc Update (UpsertCategoryRequest) returns (Category) {}
   // Delete a category
   rpc Delete (DeleteCategoryRequest) returns (google.protobuf.Empty) {}
 }

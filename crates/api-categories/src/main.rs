@@ -20,9 +20,9 @@ async fn main() -> anyhow::Result<()> {
 
     let schema = ApiSchemaBuilder::build(state.clone());
 
-    let addr = state.0.config.listen_address;
+    let addr = state.state.config.listen_address;
 
-    let web = router(schema, state.0.config.env);
+    let web = router(schema, state.state.config.env);
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(CATEGORY_FILE_DESCRIPTOR_SET)

@@ -93,13 +93,8 @@ impl Configuration {
             query_limit,
             #[cfg(feature = "nats")]
             nats: {
-                let jetstream_config = env_var("JETSTREAM_CONFIG");
                 NatsConfig {
                     nats_url: env_var("NATS_URL"),
-                    stream: {
-                        serde_json::from_str(&jetstream_config)
-                            .expect("failed to parse jetstream_config")
-                    },
                 }
             },
             loki_url,

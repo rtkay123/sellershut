@@ -1,5 +1,8 @@
 use sellershut_core::{
-    categories::{mutate_categories_server::MutateCategories, Category, DeleteCategoryRequest},
+    categories::{
+        mutate_categories_server::MutateCategories, Category, DeleteCategoryRequest,
+        UpsertCategoryRequest,
+    },
     google::protobuf::Empty,
 };
 
@@ -12,12 +15,18 @@ impl MutateCategories for ApiState {
     #[tracing::instrument(skip(self), err(Debug))]
     async fn create(
         &self,
-        request: tonic::Request<Category>,
+        request: tonic::Request<UpsertCategoryRequest>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
         // send message to cache update and search index update
-        self.0
+        let req = request.into_inner();
+        let event = req.event();
+        let category = req.category.expect("category to be defined");
+        let subject = format!("{}.create.{}", self.subject.to_string(), "");
+
+        let _ = self
+            .state
             .jetstream_context
-            .publish("categories", "data".into())
+            .publish(subject, "data".into())
             .await;
         todo!()
     }
@@ -27,7 +36,7 @@ impl MutateCategories for ApiState {
     #[tracing::instrument(skip(self), err(Debug))]
     async fn update(
         &self,
-        request: tonic::Request<Category>,
+        request: tonic::Request<UpsertCategoryRequest>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
         todo!()
     }
