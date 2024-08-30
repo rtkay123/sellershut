@@ -17,6 +17,11 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<pagination::Cursor>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
+        let _ = self
+            .state
+            .jetstream_context
+            .publish("categories.create", "data".into())
+            .await;
         todo!()
     }
 
