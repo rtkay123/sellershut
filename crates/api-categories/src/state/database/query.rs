@@ -1,10 +1,14 @@
+use core_services::cache::{PoolLike, PooledConnectionLike};
+use futures_util::FutureExt;
+use prost::Message;
 use sellershut_core::{
     categories::{
         query_categories_server::QueryCategories, Category, Connection, GetCategoryRequest,
         GetSubCategoriesRequest,
     },
-    common::pagination,
+    common::pagination::{self, cursor::cursor_value::CursorType, CursorBuilder},
 };
+use tracing::{error, warn};
 
 use crate::state::ApiState;
 
@@ -17,12 +21,52 @@ impl QueryCategories for ApiState {
         &self,
         request: tonic::Request<pagination::Cursor>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
-        let _ = self
-            .state
-            .jetstream_context
-            .publish("categories.create", "data".into())
+        // get cache first
+        let mut cache = self.state.cache.get().await.unwrap();
+
+        let cache_result = cache
+            .get::<_, Vec<Vec<u8>>>("categories:cursor:after")
+            .then(|payload| async move {
+                match payload {
+                    Ok(payload) => {
+                        if payload.is_empty() || payload.iter().any(|value| value.is_empty()) {
+                            let err = "cache is corrupted, empty bytes";
+                            Err(tonic::Status::internal(err))
+                        } else {
+                            let results:Result<Vec<_>,_> = payload
+                                .iter()
+                                .map(|value| {
+                                    Category::decode(value.as_ref())
+                                        .map_err(|e| tonic::Status::internal(e.to_string()))
+                                })
+                                .collect();
+                            results
+                        }
+                    }
+                    Err(e) => Err(tonic::Status::internal(e.to_string())),
+                }
+            })
             .await;
+
+        let categories = match cache_result {
+            Ok(result) => {
+                result
+            },
+            Err(e) => {
+                error!("cache read {e}");
+
+                //proceed with db call
+                todo!()
+            }
+        };
+
         todo!()
+
+        /* let _ = self
+        .state
+        .jetstream_context
+        .publish("categories.create", "data".into())
+        .await; */
     }
 
     #[doc = " get category by id"]
