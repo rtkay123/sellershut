@@ -19,3 +19,8 @@ pub mod pagination;
     )
 ))]
 pub mod utils;
+
+#[cfg(feature = "id-gen")]
+#[cfg_attr(docsrs, doc(cfg(feature = "id-gen")))]
+/// ID Generation
+pub mod id;

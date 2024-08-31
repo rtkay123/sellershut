@@ -3,8 +3,8 @@ use futures_util::{FutureExt, TryFutureExt};
 use prost::Message;
 use sellershut_core::{
     categories::{
-        query_categories_server::QueryCategories, Category, Connection, GetCategoryRequest,
-        GetSubCategoriesRequest, UpsertCategoryRequest,
+        query_categories_server::QueryCategories, Category, CategoryEvent, Connection,
+        GetCategoryRequest, GetSubCategoriesRequest, UpsertCategoryRequest,
     },
     common::pagination::{self, cursor::cursor_value::CursorType, CursorBuilder},
 };
@@ -113,7 +113,7 @@ impl QueryCategories for ApiState {
 
                 let req = UpsertCategoryRequest {
                     category: Some(category.clone()),
-                    ..Default::default()
+                    event: CategoryEvent::Create.into(),
                 };
 
                 let mut buf = Vec::new();

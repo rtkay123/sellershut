@@ -1,12 +1,16 @@
+use prost::Message;
 use sellershut_core::{
     categories::{
-        mutate_categories_server::MutateCategories, Category, DeleteCategoryRequest,
+        mutate_categories_server::MutateCategories, Category, CategoryEvent, DeleteCategoryRequest,
         UpsertCategoryRequest,
     },
+    common::id::generate_id,
     google::protobuf::Empty,
 };
 
-use crate::state::ApiState;
+use crate::{api::entity, state::ApiState};
+
+use super::map_err;
 
 #[tonic::async_trait]
 impl MutateCategories for ApiState {
@@ -17,18 +21,50 @@ impl MutateCategories for ApiState {
         &self,
         request: tonic::Request<UpsertCategoryRequest>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
-        // send message to cache update and search index update
-        let req = request.into_inner();
-        let event = req.event();
-        let category = req.category.expect("category to be defined");
-        let subject = format!("{}.create.{}", self.subject.to_string(), "");
+        let category = request.into_inner().category.expect("category to exist");
+        let id = generate_id();
+
+        // Check if the value fits within the range of i64
+        let category = sqlx::query!(
+            "insert into category (id, name, sub_categories, image_url, parent_id)
+                values ($1, $2, $3, $4, $5) returning *",
+            &id,
+            &category.name,
+            &category.sub_categories,
+            category.image_url,
+            category.parent_id
+        )
+        .fetch_one(&self.state.db_pool)
+        .await
+        .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let category = Category::from(entity::Category {
+            created_at: category.created_at,
+            updated_at: category.updated_at,
+            id: category.id,
+            name: category.name,
+            sub_categories: category.sub_categories,
+            parent_id: category.parent_id,
+            image_url: category.image_url,
+        });
+
+        let req = UpsertCategoryRequest {
+            category: Some(category.clone()),
+            event: CategoryEvent::Create.into(),
+        };
+
+        let mut buf = Vec::new();
+        req.encode(&mut buf).expect("Failed to encode message");
+
+        let subject = format!("{}.insert.with_index", self.subject);
 
         let _ = self
             .state
             .jetstream_context
-            .publish(subject, "data".into())
+            .publish(subject, buf.into())
             .await;
-        todo!()
+
+        Ok(tonic::Response::new(category))
     }
 
     #[doc = " Update a category"]
@@ -38,7 +74,48 @@ impl MutateCategories for ApiState {
         &self,
         request: tonic::Request<UpsertCategoryRequest>,
     ) -> Result<tonic::Response<Category>, tonic::Status> {
-        todo!()
+        let category = request.into_inner().category.expect("category to exist");
+        // Check if the value fits within the range of i64
+        let category = sqlx::query!(
+            "update category set name = $2, sub_categories = $3, image_url = $4, parent_id = $5
+                where id = $1 returning *",
+            category.id,
+            category.name,
+            &category.sub_categories,
+            category.image_url,
+            category.parent_id,
+        )
+        .fetch_one(&self.state.db_pool)
+        .await
+        .map_err(map_err)?;
+
+        let category = Category::from(entity::Category {
+            created_at: category.created_at,
+            updated_at: category.updated_at,
+            id: category.id,
+            name: category.name,
+            sub_categories: category.sub_categories,
+            parent_id: category.parent_id,
+            image_url: category.image_url,
+        });
+
+        let req = UpsertCategoryRequest {
+            category: Some(category.clone()),
+            event: CategoryEvent::Create.into(),
+        };
+
+        let mut buf = Vec::new();
+        req.encode(&mut buf).expect("Failed to encode message");
+
+        let subject = format!("{}.insert.with_index", self.subject);
+
+        let _ = self
+            .state
+            .jetstream_context
+            .publish(subject, buf.into())
+            .await;
+
+        Ok(tonic::Response::new(category))
     }
 
     #[doc = " Delete a category"]

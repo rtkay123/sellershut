@@ -42,7 +42,6 @@ impl CursorBuilder {
             })
         } else {
             Err("missing tokens".into())
-
         }
     }
 

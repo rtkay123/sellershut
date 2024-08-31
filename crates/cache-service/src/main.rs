@@ -24,12 +24,12 @@ async fn main() -> Result<()> {
             let stream = env_var(&create_var("STREAM_NAME"));
             let subject = env_var(&create_var("STREAM_SUBJECTS"));
             let stream_max_bytes = env_var(&create_var("STREAM_MAX_BYTES"));
-            let consumer = format!("CONSUMER_{}",env!("CARGO_PKG_NAME"));
+            let consumer = format!("CONSUMER_{}", env!("CARGO_PKG_NAME"));
             debug!(stream = stream, subjects = subject, "configuring subjects");
 
             js.get_or_create_stream(stream::Config {
                 name: stream.to_string(),
-                subjects: vec![format!("{subject}")],
+                subjects: subject.split(',').map(String::from).collect(),
                 max_messages: 10_000,
                 max_bytes: stream_max_bytes.parse().unwrap(),
                 ..Default::default()
@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
                     .create_consumer(consumer::pull::Config {
                         durable_name: Some(consumer.to_string()),
                         name: Some(consumer),
+                        // NOTE: use this for maybe the search one filter_subjects
                         ..Default::default()
                     })
                     .await

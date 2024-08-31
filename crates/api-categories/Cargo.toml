@@ -16,7 +16,7 @@ core-services = { workspace = true, features = ["api", "cache", "nats", "postgre
 dotenvy.workspace = true
 futures-util.workspace = true
 prost.workspace = true
-sellershut-core = { workspace = true, features = ["rpc-client-categories", "rpc-server-categories", "serde"] }
+sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "time", "tls-rustls"] }
