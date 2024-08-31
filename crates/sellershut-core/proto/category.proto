@@ -57,11 +57,6 @@ message GetSubCategoriesRequest {
   common.pagination.Cursor pagination = 2; // Pagination Properties
 }
 
-message CategoryMutation {
-  common.utils.MutationType mutationType = 1;
-  Category category = 2;
-}
-
 enum CategoryEvent {
   CREATE = 0;
   UPDATE = 1;
