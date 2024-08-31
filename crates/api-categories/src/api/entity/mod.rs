@@ -25,15 +25,19 @@ pub struct Category {
     pub updated_at: OffsetDateTime,
 }
 
-fn to_offset_datetime(timestamp: Timestamp) -> OffsetDateTime {
-    let duration = time::Duration::seconds(timestamp.seconds)
-        + time::Duration::nanoseconds(timestamp.nanos.into());
+fn to_offset_datetime(timestamp: Option<Timestamp>) -> OffsetDateTime {
+    if let Some(timestamp) = timestamp {
+        let duration = time::Duration::seconds(timestamp.seconds)
+            + time::Duration::nanoseconds(timestamp.nanos.into());
 
-    // Use Unix epoch (1970-01-01T00:00:00Z) as a starting point
-    let epoch = OffsetDateTime::UNIX_EPOCH;
+        // Use Unix epoch (1970-01-01T00:00:00Z) as a starting point
+        let epoch = OffsetDateTime::UNIX_EPOCH;
 
-    // Add the duration to the Unix epoch
-    epoch + duration
+        // Add the duration to the Unix epoch
+        epoch + duration
+    } else {
+        OffsetDateTime::now_utc()
+    }
 }
 
 impl From<sellershut_core::categories::Category> for Category {
@@ -44,8 +48,8 @@ impl From<sellershut_core::categories::Category> for Category {
             sub_categories: value.sub_categories,
             image_url: value.image_url,
             parent_id: value.parent_id,
-            created_at: to_offset_datetime(value.created_at.unwrap()),
-            updated_at: to_offset_datetime(value.updated_at.unwrap()),
+            created_at: to_offset_datetime(value.created_at),
+            updated_at: to_offset_datetime(value.updated_at),
         }
     }
 }

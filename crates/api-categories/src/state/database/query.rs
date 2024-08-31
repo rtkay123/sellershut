@@ -8,7 +8,7 @@ use sellershut_core::{
     },
     common::pagination::{self, cursor::cursor_value::CursorType, CursorBuilder},
 };
-use tracing::{error, warn};
+use tracing::{debug, error, info_span, warn, Instrument};
 
 use crate::{
     api::entity::{self},
@@ -78,21 +78,30 @@ impl QueryCategories for ApiState {
 
         let cache_key = format!("category:id:{id}");
 
+        let s = info_span!("cache call");
+
         // get cache first
         let mut cache = self.state.cache.get().await.unwrap();
         let cache_result = cache
-            .get::<_, Vec<u8>>(cache_key)
+            .get::<_, Vec<u8>>(&cache_key)
             .map_err(|e| tonic::Status::internal(e.to_string()))
             .and_then(|payload| async move {
-                Category::decode(payload.as_ref())
-                    .map_err(|e| tonic::Status::internal(e.to_string()))
+                if !payload.is_empty() {
+                    Category::decode(payload.as_ref())
+                        .map_err(|e| tonic::Status::internal(e.to_string()))
+                } else {
+                    let msg = "no data available in cache";
+                    debug!("{}", msg);
+                    Err(tonic::Status::not_found(msg))
+                }
             })
+            .instrument(s)
             .await;
 
         let category = match cache_result {
             Ok(category) => category,
             Err(e) => {
-                warn!("cache read error {e}");
+                debug!("cache read error: {e}");
                 let category =
                     sqlx::query_as!(entity::Category, "select * from category where id = $1", id)
                         .fetch_one(&state.db_pool)
