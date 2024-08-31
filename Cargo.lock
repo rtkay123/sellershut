@@ -108,11 +108,15 @@ name = "api-search"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-nats",
+ "axum",
  "core-services",
+ "dotenvy",
  "meilisearch-sdk",
  "rust-bert",
  "sellershut-core",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
