@@ -19,14 +19,17 @@ impl ApiState {
         let state = ServiceState::initialise(env!("CARGO_CRATE_NAME")).await?;
 
         let stream = env_var("JETSTREAM_NAME");
-        let subject = env_var("JETSTREAM_SUBJECTS");
+        let subjects = env_var("JETSTREAM_SUBJECTS")
+            .split(',')
+            .map(String::from)
+            .collect();
         let stream_max_bytes = env_var("JETSTREAM_MAX_BYTES");
 
         state
             .jetstream_context
             .get_or_create_stream(stream::Config {
                 name: stream.to_string(),
-                subjects: vec![format!("{subject}")],
+                subjects,
                 max_messages: 10_000,
                 //                max_bytes: stream_max_bytes.parse().unwrap(),
                 ..Default::default()
@@ -38,7 +41,7 @@ impl ApiState {
 
         Ok(Self {
             state,
-            subject: subject.into(),
+            subject: stream.into(),
         })
     }
 }
