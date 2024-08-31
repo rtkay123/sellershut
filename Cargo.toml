@@ -9,6 +9,7 @@ async-graphql-axum = "7.0.7"
 async-nats = "0.35.1"
 axum = "0.7.5"
 dotenvy = "0.15.7"
+fake = "2.9.2"
 prost = "0.13.1"
 sellershut-core = { path = "crates/sellershut-core" }
 core-services = { path = "crates/core-services" }

@@ -26,3 +26,6 @@ tonic.workspace = true
 tonic-reflection.workspace = true
 tower = { workspace = true, features = ["make", "steer", "util"] }
 tracing.workspace = true
+
+[dev-dependencies]
+fake = { workspace = true, features = ["derive"] }

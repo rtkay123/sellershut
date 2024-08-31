@@ -11,5 +11,6 @@ async-nats.workspace = true
 core-services = { workspace = true, features = ["cache-write", "nats", "rt-tokio", "telemetry"] }
 dotenvy.workspace = true
 futures-util.workspace = true
+sellershut-core = { workspace = true, features = ["categories"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing.workspace = true
