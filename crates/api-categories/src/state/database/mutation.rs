@@ -56,7 +56,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).expect("Failed to encode message");
 
-        let subject = format!("{}.insert.with_index", self.subject);
+        let subject = format!("{}.update.index.set", self.subject);
 
         let _ = self
             .state
@@ -107,7 +107,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).expect("Failed to encode message");
 
-        let subject = format!("{}.update.with_index", self.subject);
+        let subject = format!("{}.update.index.update", self.subject);
 
         let _ = self
             .state
@@ -132,7 +132,7 @@ impl MutateCategories for ApiState {
             .await
             .map_err(map_err)?;
 
-        let subject = format!("{}.delete.with_index", self.subject);
+        let subject = format!("{}.update.index.delete", self.subject);
 
         let _ = self
             .state
@@ -140,6 +140,6 @@ impl MutateCategories for ApiState {
             .publish(subject, id.into())
             .await;
 
-        todo!()
+        Ok(tonic::Response::new(Empty::default()))
     }
 }
