@@ -52,7 +52,7 @@ services:
   nats:
     image: nats:2.10.18-alpine
     entrypoint: nats-server
-    command: --js
+    command: ["--js", "-m", "8222"]
     ports:
       - "4222:4222"
       - "6222:6222"
