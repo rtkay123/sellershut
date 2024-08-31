@@ -107,7 +107,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).expect("Failed to encode message");
 
-        let subject = format!("{}.insert.with_index", self.subject);
+        let subject = format!("{}.update.with_index", self.subject);
 
         let _ = self
             .state
@@ -125,6 +125,21 @@ impl MutateCategories for ApiState {
         &self,
         request: tonic::Request<DeleteCategoryRequest>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        let id = request.into_inner().id;
+
+        sqlx::query!("delete from category where id = $1", id)
+            .execute(&self.state.db_pool)
+            .await
+            .map_err(map_err)?;
+
+        let subject = format!("{}.delete.with_index", self.subject);
+
+        let _ = self
+            .state
+            .jetstream_context
+            .publish(subject, id.into())
+            .await;
+
         todo!()
     }
 }
