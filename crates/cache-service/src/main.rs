@@ -22,26 +22,29 @@ async fn main() -> Result<()> {
             let service = service.to_uppercase();
             let create_var = |s: &str| format!("{service}_{s}");
             let stream = env_var(&create_var("STREAM_NAME"));
-            let subject = env_var(&create_var("STREAM_SUBJECTS"));
+            let subjects: Vec<_> = env_var(&create_var("STREAM_SUBJECTS"))
+                .split(',')
+                .map(String::from)
+                .collect();
+            assert!(subjects.len() > 0);
             let stream_max_bytes = env_var(&create_var("STREAM_MAX_BYTES"));
             let consumer = format!("CONSUMER_{}", env!("CARGO_PKG_NAME"));
-            debug!(stream = stream, subjects = subject, "configuring subjects");
+            debug!(stream = stream, subjects = ?subjects, "configuring subjects");
 
             js.get_or_create_stream(stream::Config {
                 name: stream.to_string(),
-                subjects: subject.split(',').map(String::from).collect(),
+                subjects,
                 max_messages: 10_000,
                 max_bytes: stream_max_bytes.parse().unwrap(),
                 ..Default::default()
             })
             .map_err(|e| anyhow!(e.to_string()))
             .and_then(|stream| async move {
-                debug!(subjects = subject, consumer = consumer, "creating consumer");
+                debug!(consumer = consumer, "creating consumer");
                 stream
                     .create_consumer(consumer::pull::Config {
                         durable_name: Some(consumer.to_string()),
                         name: Some(consumer),
-                        // NOTE: use this for maybe the search one filter_subjects
                         ..Default::default()
                     })
                     .await
@@ -70,7 +73,7 @@ async fn handle_message(
     let mut messages = consumer.messages().await?;
 
     while let Some(Ok(message)) = messages.next().await {
-        info!("Got message {:?}", message);
+        println!("Got message {:?}", message);
         if let Err(e) = message.ack().await {
             eprintln!("{e}");
         }

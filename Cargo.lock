@@ -112,10 +112,12 @@ dependencies = [
  "axum",
  "core-services",
  "dotenvy",
+ "futures-util",
  "meilisearch-sdk",
  "rust-bert",
  "sellershut-core",
  "tokio",
+ "tonic",
  "tracing",
 ]
 

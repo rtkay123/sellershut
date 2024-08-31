@@ -52,11 +52,18 @@ impl QueryCategories for ApiState {
             Err(e) => {
                 error!("cache read {e}");
 
+                let subject = format!("{}.create", self.subject);
+                let _ = self
+                    .state
+                    .jetstream_context
+                    .publish(subject, "data".into())
+                    .await;
+                debug!("message published");
+
                 //proceed with db call
                 todo!()
             }
         };
-
         todo!()
 
         /* let _ = self
@@ -119,7 +126,7 @@ impl QueryCategories for ApiState {
                 let mut buf = Vec::new();
                 req.encode(&mut buf).expect("Failed to encode message");
 
-                let subject = format!("{}.cache.insert", self.subject);
+                let subject = format!("categories.update.index.add");
 
                 let _ = self
                     .state
