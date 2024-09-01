@@ -3,7 +3,9 @@ use sellershut_core::categories::query_categories_client::QueryCategoriesClient;
 use std::path::Path;
 use tokio::task::JoinHandle;
 
-use core_services::state::ServiceState;
+use meilisearch_sdk::client::Client;
+
+use core_services::state::{config::env_var, ServiceState};
 
 pub struct ApiState {
     pub state: ServiceState,
@@ -13,6 +15,7 @@ pub struct ApiState {
     #[cfg(feature = "nlp")]
     classifier_handle: JoinHandle<anyhow::Result<()>>,
     pub categories_client: QueryCategoriesClient<tonic::transport::Channel>,
+    meilisearch: Client,
 }
 
 impl ApiState {
@@ -27,6 +30,11 @@ impl ApiState {
 
         let categories_client = QueryCategoriesClient::connect("http://[::1]:1304").await?;
 
+        let meilisearch_url = env_var("MEILISEARCH_URL");
+        let meilisearch_key = env_var("MEILISEARCH_APIKEY");
+
+        let meilisearch = Client::new(&meilisearch_url, Some(meilisearch_key))?;
+
         Ok(Self {
             state,
             #[cfg(feature = "nlp")]
@@ -34,6 +42,7 @@ impl ApiState {
             #[cfg(feature = "nlp")]
             classifier,
             categories_client,
+            meilisearch,
         })
     }
 }
