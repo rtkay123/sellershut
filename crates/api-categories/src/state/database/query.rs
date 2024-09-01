@@ -1,18 +1,19 @@
-use core_services::cache::{PoolLike, PooledConnectionLike};
-use futures_util::{FutureExt, TryFutureExt};
+use core_services::cache::{PoolLike, PooledConnection, PooledConnectionLike};
+use futures_util::TryFutureExt;
 use prost::Message;
 use sellershut_core::{
     categories::{
         query_categories_server::QueryCategories, Category, CategoryEvent, Connection,
-        GetCategoryRequest, GetSubCategoriesRequest, UpsertCategoryRequest,
+        GetCategoryRequest, GetSubCategoriesRequest, Node, UpsertCategoryRequest,
     },
-    common::pagination::{self, cursor::cursor_value::CursorType, CursorBuilder},
+    common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use tracing::{debug, error, info_span, warn, Instrument};
 
 use crate::{
-    api::entity::{self},
-    state::ApiState,
+    api::entity::{self, to_offset_datetime},
+    state::{database::map_err, ApiState},
 };
 
 #[tonic::async_trait]
@@ -25,53 +26,210 @@ impl QueryCategories for ApiState {
         request: tonic::Request<pagination::Cursor>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         // get cache first
-        let mut cache = self.state.cache.get().await.unwrap();
+        let mut cache = self.state.cache.get().await.map_err(map_err)?;
 
-        let cache_result = cache
-            .get::<_, Vec<Vec<u8>>>("categories:cursor:after")
-            .map_err(|e| tonic::Status::internal(e.to_string()))
-            .and_then(|payload| async move {
-                if payload.is_empty() || payload.iter().any(|value| value.is_empty()) {
-                    let err = "cache is corrupted, empty bytes";
-                    Err(tonic::Status::internal(err))
-                } else {
-                    let results: Result<Vec<_>, _> = payload
-                        .iter()
-                        .map(|value| {
-                            Category::decode(value.as_ref())
-                                .map_err(|e| tonic::Status::internal(e.to_string()))
-                        })
-                        .collect();
-                    results
+        let pagination = request.into_inner();
+
+        let max = self.state.config.query_limit;
+        // get count
+        let actual_count = pagination::query_count(
+            max,
+            &pagination.index.ok_or_else(|| {
+                tonic::Status::new(tonic::Code::Internal, "missing pagination index")
+            })?,
+        );
+        // get 1 more
+        let get_count: i64 = actual_count as i64 + 1;
+
+        // a cursor was specified
+        let connection = if let Some(ref cursor) = pagination.cursor_value {
+            // get cursor
+            let cursor_value = cursor.cursor_type.as_ref().ok_or_else(|| {
+                tonic::Status::new(tonic::Code::Internal, "Cursor type is not set")
+            })?;
+
+            let decode_cursor = |cursor_value: &CursorType| {
+                CursorBuilder::decode(cursor_value)
+                    .map_err(|e| tonic::Status::internal(e.to_string()))
+            };
+
+            let connection = match cursor_value {
+                CursorType::After(cursor) => {
+                    // try cache first
+                    let cache_key = format!("categories:{cursor}:after");
+
+                    let cache_result = read_cache(&cache_key, cache).await;
+
+                    let connection = match cache_result {
+                        Ok(result) => result,
+                        Err(e) => {
+                            error!("cache read {e}");
+
+                            let cursor = decode_cursor(cursor_value)?;
+                            let id = cursor.id();
+                            debug!("converting to date {:?}", cursor.dt());
+                            let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339).unwrap();
+
+                            let fut_count = sqlx::query_scalar!(
+                                "
+                                    select count(*) from category
+                                    where 
+                                        (
+                                            created_at <> $1
+                                            or id <= $2
+                                        )
+                                        and created_at < $1
+                                ",
+                                created_at,
+                                id,
+                            )
+                            .fetch_one(&self.state.db_pool)
+                            .map_err(map_err);
+
+                            let fut_categories = sqlx::query_as!(
+                                entity::Category,
+                                "
+                                    select * from category
+                                    where 
+                                        (
+                                            created_at = $1
+                                            and id > $2
+                                        )
+                                        or created_at >= $1
+                                    order by
+                                        created_at asc,
+                                        id asc
+                                    limit
+                                        $3
+                                ",
+                                created_at,
+                                id,
+                                get_count
+                            )
+                            .fetch_all(&self.state.db_pool)
+                            .map_err(map_err);
+
+                            let (count_on_other_end, categories) =
+                                tokio::try_join!(fut_count, fut_categories)?;
+
+                            let categories: Vec<_> =
+                                categories.into_iter().map(Category::from).collect();
+
+                            let connection = parse_categories(
+                                count_on_other_end,
+                                categories,
+                                &pagination,
+                                actual_count,
+                            )?;
+
+                            connection
+                        }
+                    };
+                    connection
                 }
-            })
-            .await;
+                CursorType::Before(cursor) => {
+                    // try cache first
+                    let cache_key = format!("categories:{cursor}:after");
 
-        let categories = match cache_result {
-            Ok(result) => result,
-            Err(e) => {
-                error!("cache read {e}");
+                    let cache_result = read_cache(&cache_key, cache).await;
 
-                let subject = format!("{}.update.set", self.subject);
+                    let connection = match cache_result {
+                        Ok(result) => result,
+                        Err(e) => {
+                            error!("cache read {e}");
 
-                let _ = self
-                    .state
-                    .jetstream_context
-                    .publish(subject, "data".into())
-                    .await;
-                debug!("message published");
+                            let cursor = decode_cursor(cursor_value)?;
+                            let id = cursor.id();
+                            let created_at =
+                                OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
 
-                //proceed with db call
-                todo!()
-            }
+                            let fut_count = sqlx::query_scalar!(
+                                "
+                                    select count(*) from category
+                                    where 
+                                        (
+                                            created_at <> $1
+                                            or id > $2
+                                        )
+                                        and created_at >= $1
+                                ",
+                                created_at,
+                                id,
+                            )
+                            .fetch_one(&self.state.db_pool)
+                            .map_err(map_err);
+
+                            let fut_categories = sqlx::query_as!(
+                                entity::Category,
+                                "
+                                    select * from category
+                                    where 
+                                        (
+                                            created_at = $1
+                                            and id < $2
+                                        )
+                                        or created_at < $1
+                                    order by
+                                        created_at desc,
+                                        id desc
+                                    limit
+                                        $3
+                                ",
+                                created_at,
+                                id,
+                                get_count
+                            )
+                            .fetch_all(&self.state.db_pool)
+                            .map_err(map_err);
+
+                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+
+                            let categories: Vec<_> =
+                                categories.into_iter().map(Category::from).collect();
+
+                            let connection =
+                                parse_categories(count, categories, &pagination, actual_count)?;
+
+                            connection
+                        }
+                    };
+                    connection
+                }
+            };
+            connection
+        } else {
+            let categories = sqlx::query_as!(
+                entity::Category,
+                "select * FROM category order by created_at asc
+                limit $1",
+                get_count
+            )
+            .fetch_all(&self.state.db_pool)
+            .await
+            .map_err(map_err)?;
+
+            let connection = parse_categories(
+                Some(get_count - categories.len() as i64),
+                categories.into_iter().map(Category::from).collect(),
+                &pagination,
+                actual_count,
+            )?;
+
+            connection
         };
-        todo!()
 
-        /* let _ = self
-        .state
-        .jetstream_context
-        .publish("categories.create", "data".into())
-        .await; */
+        let byte_data = connection.clone().encode_to_vec();
+
+        let subject = format!("{}.update.set", self.subject);
+
+        let _ = self
+            .state
+            .jetstream_context
+            .publish(subject, byte_data.into())
+            .await;
+        debug!("message published");
+
+        Ok(tonic::Response::new(connection))
     }
 
     #[doc = " get category by id"]
@@ -151,4 +309,80 @@ impl QueryCategories for ApiState {
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         todo!()
     }
+}
+
+async fn read_cache(
+    cache_key: &str,
+    mut cache: PooledConnection<'_>,
+) -> Result<Connection, tonic::Status> {
+    cache
+        .get::<_, Vec<u8>>(&cache_key)
+        .map_err(|e| tonic::Status::internal(e.to_string()))
+        .and_then(|payload| async move {
+            if payload.is_empty() {
+                let err = "cache is corrupted, empty bytes";
+                Err(tonic::Status::internal(err))
+            } else {
+                Connection::decode(payload.as_ref())
+                    .map_err(|e| tonic::Status::internal(e.to_string()))
+            }
+        })
+        .await
+}
+
+fn parse_categories(
+    count_on_other_end: Option<i64>,
+    categories: Vec<Category>,
+    pagination: &Cursor,
+    actual_count: i32,
+) -> Result<Connection, tonic::Status> {
+    let user_count = actual_count as usize;
+
+    let count_on_other_end = count_on_other_end
+        .ok_or_else(|| tonic::Status::new(tonic::Code::Internal, "count returned no items"))?;
+    let left_side = CursorBuilder::is_paginating_from_left(pagination);
+    let cursor_unavailable = CursorBuilder::is_cursor_unavailable(pagination);
+
+    let len = categories.len();
+
+    let has_more = len > user_count;
+
+    let categories = if has_more {
+        categories.into_iter().take(user_count).collect()
+    } else {
+        categories
+    };
+
+    let connection = Connection {
+        edges: categories
+            .into_iter()
+            .map(|category| {
+                let dt = to_offset_datetime(category.created_at).to_string();
+                let cursor = CursorBuilder::new(&category.id, &dt);
+                Node {
+                    node: Some(category),
+                    cursor: cursor.encode(),
+                }
+            })
+            .collect(),
+        page_info: Some(PageInfo {
+            has_next_page: {
+                if cursor_unavailable || left_side {
+                    has_more
+                } else {
+                    count_on_other_end > 0
+                }
+            },
+            has_previous_page: {
+                if left_side {
+                    count_on_other_end > 0
+                } else {
+                    has_more
+                }
+            },
+            ..Default::default() // other props calculated by async-graphql
+        }),
+    };
+
+    Ok(connection)
 }

@@ -5,7 +5,7 @@ use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use cursor::Index;
 
 /// Pagination cursor
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[cfg(feature = "rpc-server-categories")]
 pub struct CursorBuilder {
     id: String,
@@ -34,11 +34,11 @@ impl CursorBuilder {
 
         let decoded = String::from_utf8(bytes)?;
 
-        let mut tokens = decoded.split(':');
-        if let (Some(idx), Some(id)) = (tokens.next(), tokens.next()) {
+        let mut tokens = decoded.split('|');
+        if let (Some(dt), Some(id)) = (tokens.next(), tokens.next()) {
             Ok(Self {
                 id: id.to_string(),
-                dt: idx.parse().unwrap(),
+                dt: dt.parse().unwrap(),
             })
         } else {
             Err("missing tokens".into())
@@ -57,7 +57,7 @@ impl CursorBuilder {
 
     /// encode a cursor
     pub fn encode(&self) -> String {
-        BASE64_URL_SAFE_NO_PAD.encode(format!("{}:{}", self.dt, self.id))
+        BASE64_URL_SAFE_NO_PAD.encode(format!("{}|{}", self.dt, self.id))
     }
 
     /// Gets pagination direction
@@ -101,5 +101,23 @@ pub fn query_count(max: i32, pagination: &Index) -> i32 {
         max
     } else {
         *user_param
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{cursor::cursor_value::CursorType, CursorBuilder};
+
+    #[test]
+    fn test_cursor() {
+        let cursor =
+            CursorBuilder::new("9ckyrhcx6jun6n_7a8adq", "2023-01-11T11:32:07.853915+00:00");
+
+        let encode = cursor.encode();
+
+        let cursor_type = CursorType::After(encode);
+        let decode = CursorBuilder::decode(&cursor_type).unwrap();
+
+        assert_eq!(decode, cursor);
     }
 }

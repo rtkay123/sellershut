@@ -20,7 +20,7 @@ sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categori
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "time", "tls-rustls"] }
-time.workspace = true
+time = { workspace = true, features = ["formatting"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tonic-reflection.workspace = true

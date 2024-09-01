@@ -25,19 +25,16 @@ pub struct Category {
     pub updated_at: OffsetDateTime,
 }
 
-fn to_offset_datetime(timestamp: Option<Timestamp>) -> OffsetDateTime {
-    if let Some(timestamp) = timestamp {
-        let duration = time::Duration::seconds(timestamp.seconds)
-            + time::Duration::nanoseconds(timestamp.nanos.into());
-
-        // Use Unix epoch (1970-01-01T00:00:00Z) as a starting point
-        let epoch = OffsetDateTime::UNIX_EPOCH;
-
-        // Add the duration to the Unix epoch
-        epoch + duration
-    } else {
-        OffsetDateTime::now_utc()
-    }
+pub fn to_offset_datetime(timestamp: Option<Timestamp>) -> OffsetDateTime {
+    let timestamp = timestamp.expect("timestamp to exist");
+    let seconds = timestamp.seconds;
+    let nanos = timestamp.nanos as i64;
+    // Ensure the nanoseconds are within the valid range
+    let nanoseconds = nanos % 1_000_000_000;
+    // Create OffsetDateTime from seconds and nanoseconds
+    let d = OffsetDateTime::from_unix_timestamp(seconds).expect("Invalid Unix timestamp")
+        + time::Duration::nanoseconds(nanoseconds);
+    d
 }
 
 impl From<sellershut_core::categories::Category> for Category {
@@ -55,10 +52,9 @@ impl From<sellershut_core::categories::Category> for Category {
 }
 
 fn to_timestamp(dt: OffsetDateTime) -> Timestamp {
-    let duration_since_epoch = dt - OffsetDateTime::UNIX_EPOCH;
     Timestamp {
-        seconds: duration_since_epoch.whole_seconds(),
-        nanos: duration_since_epoch.whole_nanoseconds() as i32,
+        seconds: dt.unix_timestamp(),
+        nanos: dt.nanosecond() as i32,
     }
 }
 
@@ -73,5 +69,26 @@ impl From<Category> for sellershut_core::categories::Category {
             created_at: Some(to_timestamp(value.created_at)),
             updated_at: Some(to_timestamp(value.created_at)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sellershut_core::google::protobuf::Timestamp;
+    use time::OffsetDateTime;
+
+    use crate::api::entity::to_offset_datetime;
+
+    #[test]
+    fn convert_timestamp() {
+        let dt = OffsetDateTime::now_utc();
+
+        let res = Timestamp {
+            seconds: dt.unix_timestamp(),
+            nanos: dt.nanosecond() as i32,
+        };
+
+        let dt_2 = to_offset_datetime(Some(res));
+        assert_eq!(dt, dt_2);
     }
 }

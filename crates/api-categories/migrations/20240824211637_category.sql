@@ -4,8 +4,8 @@ create table category (
     sub_categories varchar(21)[] not null, -- array of ids
     image_url varchar, -- optional image url
     parent_id varchar(21) references category(id) on delete cascade, -- foreign key to self
-    created_at timestamptz default now() not null, -- timestamp for creation
-    updated_at timestamptz default now() not null -- timestamp for last update
+    created_at timestamptz default current_timestamp not null, -- timestamp for creation
+    updated_at timestamptz default current_timestamp not null -- timestamp for last update
 );
 
 create index idx_category_id on category (id);
@@ -16,7 +16,7 @@ create index idx_category_id_parent_created on category (id, parent_id, created_
 create or replace function update_updated_at()
 returns trigger as $$
 begin
-    new.updated_at = now();
+    new.updated_at = current_timestamp;
     return new;
 end;
 $$ language plpgsql;
