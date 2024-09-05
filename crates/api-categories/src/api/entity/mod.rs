@@ -25,29 +25,31 @@ pub struct Category {
     pub updated_at: OffsetDateTime,
 }
 
-pub fn to_offset_datetime(timestamp: Option<Timestamp>) -> OffsetDateTime {
-    let timestamp = timestamp.expect("timestamp to exist");
+pub fn to_offset_datetime(timestamp: Option<Timestamp>) -> async_graphql::Result<OffsetDateTime> {
+    let timestamp = timestamp.ok_or(tonic::Status::invalid_argument("timestamp is missing"))?;
     let seconds = timestamp.seconds;
     let nanos = timestamp.nanos as i64;
     // Ensure the nanoseconds are within the valid range
     let nanoseconds = nanos % 1_000_000_000;
     // Create OffsetDateTime from seconds and nanoseconds
-    let d = OffsetDateTime::from_unix_timestamp(seconds).expect("Invalid Unix timestamp")
+    let d = OffsetDateTime::from_unix_timestamp(seconds).map_err(|e| e.to_string())?
         + time::Duration::nanoseconds(nanoseconds);
-    d
+    Ok(d)
 }
 
-impl From<sellershut_core::categories::Category> for Category {
-    fn from(value: sellershut_core::categories::Category) -> Self {
-        Self {
+impl TryFrom<sellershut_core::categories::Category> for Category {
+    type Error = async_graphql::Error;
+
+    fn try_from(value: sellershut_core::categories::Category) -> async_graphql::Result<Self> {
+        Ok(Self {
             id: value.id,
             name: value.name,
             sub_categories: value.sub_categories,
             image_url: value.image_url,
             parent_id: value.parent_id,
-            created_at: to_offset_datetime(value.created_at),
-            updated_at: to_offset_datetime(value.updated_at),
-        }
+            created_at: to_offset_datetime(value.created_at)?,
+            updated_at: to_offset_datetime(value.updated_at)?,
+        })
     }
 }
 

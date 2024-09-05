@@ -1,4 +1,7 @@
-use core_services::cache::{PoolLike, PooledConnection, PooledConnectionLike};
+use core_services::cache::{
+    key::{CacheKey, CursorParams},
+    PoolLike, PooledConnection, PooledConnectionLike,
+};
 use futures_util::TryFutureExt;
 use prost::Message;
 use sellershut_core::{
@@ -8,8 +11,8 @@ use sellershut_core::{
     },
     common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
-use tracing::{debug, error, info_span, warn, Instrument};
+use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
+use tracing::{debug, error, info_span, trace, Instrument};
 
 use crate::{
     api::entity::{self, to_offset_datetime},
@@ -26,7 +29,8 @@ impl QueryCategories for ApiState {
         request: tonic::Request<pagination::Cursor>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         // get cache first
-        let mut cache = self.state.cache.get().await.map_err(map_err)?;
+        trace!("getting cache state");
+        let cache = self.state.cache.get().await.map_err(map_err)?;
 
         let pagination = request.into_inner();
 
@@ -56,9 +60,12 @@ impl QueryCategories for ApiState {
             let connection = match cursor_value {
                 CursorType::After(cursor) => {
                     // try cache first
-                    let cache_key = format!("categories:{cursor}:after");
+                    let cache_key = CacheKey::Categories(CursorParams {
+                        cursor: Some(cursor),
+                        index: core_services::cache::key::Index::After(actual_count),
+                    });
 
-                    let cache_result = read_cache(&cache_key, cache).await;
+                    let cache_result = read_cache(cache_key, cache).await;
 
                     let connection = match cache_result {
                         Ok(result) => result,
@@ -68,7 +75,9 @@ impl QueryCategories for ApiState {
                             let cursor = decode_cursor(cursor_value)?;
                             let id = cursor.id();
                             debug!("converting to date {:?}", cursor.dt());
-                            let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339).unwrap();
+
+                            let created_at =
+                                OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
 
                             let fut_count = sqlx::query_scalar!(
                                 "
@@ -129,9 +138,12 @@ impl QueryCategories for ApiState {
                 }
                 CursorType::Before(cursor) => {
                     // try cache first
-                    let cache_key = format!("categories:{cursor}:after");
+                    let cache_key = CacheKey::Categories(CursorParams {
+                        cursor: Some(cursor),
+                        index: core_services::cache::key::Index::Before(actual_count),
+                    });
 
-                    let cache_result = read_cache(&cache_key, cache).await;
+                    let cache_result = read_cache(cache_key, cache).await;
 
                     let connection = match cache_result {
                         Ok(result) => result,
@@ -140,8 +152,8 @@ impl QueryCategories for ApiState {
 
                             let cursor = decode_cursor(cursor_value)?;
                             let id = cursor.id();
-                            let created_at =
-                                OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
+                            let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339)
+                                .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
                             let fut_count = sqlx::query_scalar!(
                                 "
@@ -242,12 +254,12 @@ impl QueryCategories for ApiState {
         let state = &self.state;
         let id = request.into_inner().id;
 
-        let cache_key = format!("category:id:{id}");
+        let cache_key = CacheKey::Category(&id);
 
         let s = info_span!("cache call");
 
         // get cache first
-        let mut cache = self.state.cache.get().await.unwrap();
+        let mut cache = self.state.cache.get().await.map_err(map_err)?;
         let cache_result = cache
             .get::<_, Vec<u8>>(&cache_key)
             .map_err(|e| tonic::Status::internal(e.to_string()))
@@ -272,7 +284,7 @@ impl QueryCategories for ApiState {
                     sqlx::query_as!(entity::Category, "select * from category where id = $1", id)
                         .fetch_one(&state.db_pool)
                         .await
-                        .unwrap();
+                        .map_err(map_err)?;
 
                 // update cache
                 let category = Category::from(category);
@@ -283,7 +295,7 @@ impl QueryCategories for ApiState {
                 };
 
                 let mut buf = Vec::new();
-                req.encode(&mut buf).expect("Failed to encode message");
+                req.encode(&mut buf).map_err(map_err)?;
 
                 let subject = format!("{}.update.set", self.subject);
 
@@ -312,7 +324,7 @@ impl QueryCategories for ApiState {
 }
 
 async fn read_cache(
-    cache_key: &str,
+    cache_key: CacheKey<'_>,
     mut cache: PooledConnection<'_>,
 ) -> Result<Connection, tonic::Status> {
     cache
@@ -354,17 +366,31 @@ fn parse_categories(
     };
 
     let connection = Connection {
-        edges: categories
-            .into_iter()
-            .map(|category| {
-                let dt = to_offset_datetime(category.created_at).to_string();
-                let cursor = CursorBuilder::new(&category.id, &dt);
-                Node {
-                    node: Some(category),
-                    cursor: cursor.encode(),
-                }
-            })
-            .collect(),
+        edges: {
+            let categories: Result<Vec<_>, _> = categories
+                .into_iter()
+                .map(|category| {
+                    to_offset_datetime(category.created_at)
+                        .map_err(|_| tonic::Status::invalid_argument("timestamp is invalid"))
+                        .and_then(|result| {
+                            result
+                                .to_offset(UtcOffset::UTC)
+                                .format(&Rfc3339)
+                                .map(|dt| {
+                                    let cursor = CursorBuilder::new(&category.id, &dt);
+                                    Node {
+                                        node: Some(category),
+                                        cursor: cursor.encode(),
+                                    }
+                                })
+                                .map_err(map_err)
+                        })
+                })
+                .collect();
+            let categories = categories?;
+            categories
+        },
+
         page_info: Some(PageInfo {
             has_next_page: {
                 if cursor_unavailable || left_side {

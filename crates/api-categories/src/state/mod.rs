@@ -31,7 +31,7 @@ impl ApiState {
                 name: stream.to_string(),
                 subjects,
                 max_messages: 10_000,
-                //                max_bytes: stream_max_bytes.parse().unwrap(),
+                max_bytes: stream_max_bytes.parse()?,
                 ..Default::default()
             })
             .await?;

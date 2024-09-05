@@ -54,7 +54,7 @@ impl MutateCategories for ApiState {
         };
 
         let mut buf = Vec::new();
-        req.encode(&mut buf).expect("Failed to encode message");
+        req.encode(&mut buf).map_err(map_err)?;
 
         let subject = format!("{}.update.index.set", self.subject);
 

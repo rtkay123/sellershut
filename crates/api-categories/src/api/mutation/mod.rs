@@ -28,7 +28,7 @@ impl GraphqlMutation {
 
         let res = service.create(request.into_request()).await?.into_inner();
 
-        Ok(Category::from(res))
+        Category::try_from(res)
     }
 
     #[instrument(skip(self, ctx), err(Debug))]
@@ -43,7 +43,7 @@ impl GraphqlMutation {
 
         let res = service.update(request.into_request()).await?.into_inner();
 
-        Ok(Category::from(res))
+        Category::try_from(res)
     }
 
     #[instrument(skip(ctx), err(Debug))]

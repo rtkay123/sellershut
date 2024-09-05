@@ -2935,6 +2935,7 @@ dependencies = [
  "tonic",
  "tonic-build",
  "tonic-types",
+ "tracing",
 ]
 
 [[package]]

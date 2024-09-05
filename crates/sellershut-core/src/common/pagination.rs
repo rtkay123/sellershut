@@ -15,6 +15,7 @@ pub struct CursorBuilder {
 #[cfg(feature = "rpc-server-categories")]
 impl CursorBuilder {
     /// Create cursor
+    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn new(id: &str, dt: &str) -> Self {
         Self {
             id: id.to_string(),
@@ -22,6 +23,7 @@ impl CursorBuilder {
         }
     }
     /// decode a cursor
+    #[cfg_attr(feature = "tracing", tracing::instrument(err(Debug)))]
     pub fn decode(
         params: &cursor::cursor_value::CursorType,
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -30,15 +32,19 @@ impl CursorBuilder {
             cursor::cursor_value::CursorType::Before(cursor) => cursor,
         };
 
+        #[cfg(feature = "tracing")]
+        tracing::trace!("decoding cursor");
         let bytes = BASE64_URL_SAFE_NO_PAD.decode(cursor)?;
 
         let decoded = String::from_utf8(bytes)?;
+        #[cfg(feature = "tracing")]
+        tracing::debug!(tokens = decoded, "cursor decoded");
 
         let mut tokens = decoded.split('|');
         if let (Some(dt), Some(id)) = (tokens.next(), tokens.next()) {
             Ok(Self {
                 id: id.to_string(),
-                dt: dt.parse().unwrap(),
+                dt: dt.parse()?,
             })
         } else {
             Err("missing tokens".into())
@@ -56,7 +62,9 @@ impl CursorBuilder {
     }
 
     /// encode a cursor
+    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn encode(&self) -> String {
+        tracing::trace!("encoding cursor");
         BASE64_URL_SAFE_NO_PAD.encode(format!("{}|{}", self.dt, self.id))
     }
 
@@ -92,7 +100,10 @@ impl CursorBuilder {
 }
 
 /// Gets maximum query results from pagination data
+#[cfg_attr(feature = "tracing", tracing::instrument)]
 pub fn query_count(max: i32, pagination: &Index) -> i32 {
+    tracing::trace!("determing items to return");
+
     let user_param = match pagination {
         Index::First(value) => value,
         Index::Last(value) => value,

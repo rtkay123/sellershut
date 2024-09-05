@@ -12,7 +12,7 @@ use sellershut_core::{
     },
 };
 use tonic::IntoRequest;
-use tracing::instrument;
+use tracing::{instrument, trace};
 
 use crate::{api::entity::Category, state::ApiState};
 
@@ -35,6 +35,7 @@ impl GraphqlQuery {
     ) -> Result<Connection<String, Category, EmptyFields, EmptyFields>> {
         let pagination = Params::parse(after, before, first, last)?;
 
+        trace!("extracting state");
         let service = ctx.data::<ApiState>()?;
 
         let res = service
@@ -46,16 +47,18 @@ impl GraphqlQuery {
 
         let mut conn = Connection::new(page_info.has_previous_page, page_info.has_next_page);
 
-        conn.edges = res
-            .edges
-            .into_iter()
-            .map(|f| {
-                Edge::new(
-                    f.cursor,
-                    Category::from(f.node.expect("category to be some")),
-                )
-            })
-            .collect();
+        trace!("mapping category types");
+
+        let mut edges = Vec::with_capacity(res.edges.len());
+
+        for edge in res.edges.into_iter() {
+            let edge = Edge::new(
+                edge.cursor,
+                Category::try_from(edge.node.expect("category to be some"))?,
+            );
+            edges.push(edge);
+        }
+        conn.edges = edges;
 
         Ok(conn)
     }
@@ -72,6 +75,7 @@ impl GraphqlQuery {
     ) -> Result<Connection<String, Category, EmptyFields, EmptyFields>> {
         let pagination = Params::parse(after, before, first, last)?;
 
+        trace!("extracting state");
         let service = ctx.data::<ApiState>()?;
 
         let req = GetSubCategoriesRequest {
@@ -88,16 +92,16 @@ impl GraphqlQuery {
 
         let mut conn = Connection::new(page_info.has_previous_page, page_info.has_next_page);
 
-        conn.edges = res
-            .edges
-            .into_iter()
-            .map(|f| {
-                Edge::new(
-                    f.cursor,
-                    Category::from(f.node.expect("category to be some")),
-                )
-            })
-            .collect();
+        let mut edges = Vec::with_capacity(res.edges.len());
+
+        for edge in res.edges.into_iter() {
+            let edge = Edge::new(
+                edge.cursor,
+                Category::try_from(edge.node.expect("category to be some"))?,
+            );
+            edges.push(edge);
+        }
+        conn.edges = edges;
 
         Ok(conn)
     }
@@ -108,6 +112,7 @@ impl GraphqlQuery {
         ctx: &Context<'_>,
         #[graphql(validator(min_length = 21, max_length = 21))] id: String,
     ) -> async_graphql::Result<Option<Category>> {
+        trace!("extracting state");
         let service = ctx.data::<ApiState>()?;
         let request = GetCategoryRequest { id };
 
@@ -116,7 +121,9 @@ impl GraphqlQuery {
             .await?
             .into_inner();
 
-        Ok(Some(Category::from(res)))
+        let category = Category::try_from(res)?;
+
+        Ok(Some(category))
     }
 }
 
@@ -124,12 +131,14 @@ impl GraphqlQuery {
 pub struct Params;
 
 impl Params {
+    #[instrument(err(Debug))]
     pub fn parse(
         after: Option<String>,
         before: Option<String>,
         first: Option<i32>,
         last: Option<i32>,
     ) -> async_graphql::Result<Cursor> {
+        trace!("parsing pagination parameters");
         if (last.is_some() && after.is_some()) || (before.is_some() && first.is_some()) {
             return Err("invalid pagination arguments. Backwards pagination needs 'last' and 'before'. Forward pagination uses 'first' and (optionally) 'after'".into());
         }
@@ -146,7 +155,11 @@ impl Params {
                 Some(CursorValue {
                     cursor_type: Some(match after {
                         Some(cursor) => CursorType::After(cursor),
-                        None => CursorType::Before(before.expect("before should be defined")),
+                        None => {
+                            let before: Result<_, async_graphql::Error> =
+                                before.ok_or(async_graphql::Error::new("last to be some"));
+                            CursorType::Before(before?)
+                        }
                     }),
                 })
             } else {
@@ -155,7 +168,9 @@ impl Params {
             index: Some(if let Some(first) = first {
                 Index::First(first)
             } else {
-                Index::Last(last.expect("last to be some"))
+                let last: Result<_, async_graphql::Error> =
+                    last.ok_or(async_graphql::Error::new("last to be some"));
+                Index::Last(last?)
             }),
         })
     }

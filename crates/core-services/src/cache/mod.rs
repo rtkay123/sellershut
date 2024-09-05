@@ -2,6 +2,8 @@
 // https://github.com/svix/svix-webhooks/blob/main/server/svix-server/src/redis/mod.rs
 mod cluster;
 
+pub mod key;
+
 use bb8::{Pool, RunError};
 use bb8_redis::RedisConnectionManager;
 pub use cluster::RedisClusterConnectionManager;
