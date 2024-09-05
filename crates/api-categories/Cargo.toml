@@ -28,4 +28,4 @@ tower = { workspace = true, features = ["make", "steer", "util"] }
 tracing.workspace = true
 
 [dev-dependencies]
-fake = { workspace = true, features = ["derive"] }
+fake = { workspace = true, features = ["derive", "time"] }

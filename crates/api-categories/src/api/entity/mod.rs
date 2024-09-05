@@ -7,7 +7,9 @@ fn default_time() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }
 
-#[derive(SimpleObject, InputObject, FromRow, Debug, Serialize, Deserialize)]
+#[derive(
+    SimpleObject, InputObject, FromRow, Debug, Serialize, Deserialize, PartialEq, Eq, Clone,
+)]
 #[graphql(input_name = "CategoryInput")]
 #[cfg_attr(test, derive(fake::Dummy))]
 pub struct Category {
@@ -69,17 +71,18 @@ impl From<Category> for sellershut_core::categories::Category {
             image_url: value.image_url,
             parent_id: value.parent_id,
             created_at: Some(to_timestamp(value.created_at)),
-            updated_at: Some(to_timestamp(value.created_at)),
+            updated_at: Some(to_timestamp(value.updated_at)),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use fake::{Fake, Faker};
     use sellershut_core::google::protobuf::Timestamp;
     use time::OffsetDateTime;
 
-    use crate::api::entity::to_offset_datetime;
+    use crate::api::entity::{to_offset_datetime, Category};
 
     #[test]
     fn convert_timestamp() {
@@ -90,7 +93,17 @@ mod tests {
             nanos: dt.nanosecond() as i32,
         };
 
-        let dt_2 = to_offset_datetime(Some(res));
+        let dt_2 = to_offset_datetime(Some(res)).unwrap();
         assert_eq!(dt, dt_2);
+    }
+
+    #[test]
+    fn convert_category() {
+        let category: Category = Faker.fake();
+
+        let other_category = sellershut_core::categories::Category::from(category.clone());
+        let original = Category::try_from(other_category).unwrap();
+
+        assert_eq!(original, category);
     }
 }
