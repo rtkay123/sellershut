@@ -3,7 +3,7 @@ use core_services::{
         key::{CacheKey, CursorParams, Index},
         PoolLike, PooledConnection, PooledConnectionLike,
     },
-    state::events::Event,
+    state::events::{Entity, Event},
 };
 use futures_util::TryFutureExt;
 use prost::Message;
@@ -260,7 +260,7 @@ impl QueryCategories for ApiState {
         if !cache_ok {
             let byte_data = connection.clone().encode_to_vec();
 
-            let event = Event::UpdateCache(self.entity.clone()).to_string();
+            let event = Event::UpdateCache(Entity::Categories).to_string();
 
             let _ = self
                 .state
@@ -326,7 +326,7 @@ impl QueryCategories for ApiState {
                 let mut buf = Vec::new();
                 req.encode(&mut buf).map_err(map_err)?;
 
-                let event = Event::UpdateCache(self.entity.clone()).to_string();
+                let event = Event::UpdateCache(Entity::Categories).to_string();
 
                 let _ = self
                     .state

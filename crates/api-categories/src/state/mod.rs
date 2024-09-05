@@ -3,12 +3,11 @@ mod database;
 use std::path::Path;
 
 use async_nats::jetstream::stream;
-use core_services::state::{config::env_var, events::Entity, ServiceState};
+use core_services::state::{config::env_var, ServiceState};
 
 #[derive(Clone)]
 pub struct ApiState {
     pub state: ServiceState,
-    pub entity: Entity,
 }
 
 impl ApiState {
@@ -41,9 +40,6 @@ impl ApiState {
         #[cfg(not(test))]
         sqlx::migrate!("./migrations").run(&state.db_pool).await?;
 
-        Ok(Self {
-            state,
-            entity: Entity::categories(stream),
-        })
+        Ok(Self { state })
     }
 }

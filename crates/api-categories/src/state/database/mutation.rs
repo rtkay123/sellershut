@@ -1,4 +1,4 @@
-use core_services::state::events::Event;
+use core_services::state::events::{Entity, Event};
 use prost::Message;
 use sellershut_core::{
     categories::{
@@ -58,7 +58,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).map_err(map_err)?;
 
-        let event = Event::SetAll(self.entity.clone()).to_string();
+        let event = Event::SetAll(Entity::Categories).to_string();
 
         let _ = self
             .state
@@ -110,7 +110,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).expect("Failed to encode message");
 
-        let event = Event::UpdateAll(self.entity.clone()).to_string();
+        let event = Event::UpdateAll(Entity::Categories).to_string();
 
         let _ = self
             .state
@@ -137,7 +137,7 @@ impl MutateCategories for ApiState {
             .map_err(map_err)?;
         debug!("row deleted");
 
-        let event = Event::DeleteAll(self.entity.clone()).to_string();
+        let event = Event::DeleteAll(Entity::Categories).to_string();
 
         let _ = self.state.jetstream_context.publish(event, id.into()).await;
         debug!("message published");

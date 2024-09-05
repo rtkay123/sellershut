@@ -1,14 +1,16 @@
 mod state;
 
-use anyhow::{anyhow, Result};
+use std::str::FromStr;
+
+use anyhow::{anyhow, Context, Result};
 use async_nats::jetstream::{consumer, stream};
-use core_services::state::config::env_var;
+use core_services::state::{config::env_var, events::Event};
 use futures_util::{
     future::{join_all, try_join_all},
     StreamExt, TryFutureExt,
 };
 use state::ApiState;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -73,6 +75,28 @@ async fn handle_message(
     let mut messages = consumer.messages().await?;
 
     while let Some(Ok(message)) = messages.next().await {
+        let subject = message.subject.to_string();
+
+        match Event::from_str(&subject) {
+            Ok(event) => match event {
+                Event::SetAll(entity) => {
+                    info!("set all entity = {}", entity.to_string());
+                }
+                Event::UpdateAll(_) => todo!(),
+                Event::DeleteAll(_) => todo!(),
+                Event::UpdateCache(entity) => {
+                    info!("update cache only entity = {}", entity.to_string());
+                }
+                _ => todo!(),
+            },
+            Err(_) => {
+                warn!(
+                    subject = subject,
+                    "received a message, subject cannot be mapped to event"
+                );
+            }
+        }
+
         println!("Got message {:?}", message);
         if let Err(e) = message.ack().await {
             eprintln!("{e}");
