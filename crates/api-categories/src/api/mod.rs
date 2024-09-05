@@ -23,3 +23,20 @@ impl ApiSchemaBuilder {
             .finish()
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use sqlx::PgPool;
+
+    use crate::tests::TestApp;
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn graphql_create_and_update(pg_pool: PgPool) -> sqlx::Result<()> {
+        let app = TestApp::new(pg_pool).await;
+
+        //        let category = create_category(&app.schema).await.unwrap();
+
+        Ok(())
+    }
+}

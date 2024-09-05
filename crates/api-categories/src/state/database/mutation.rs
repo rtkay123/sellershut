@@ -1,3 +1,4 @@
+use core_services::state::events::Event;
 use prost::Message;
 use sellershut_core::{
     categories::{
@@ -7,6 +8,7 @@ use sellershut_core::{
     common::id::generate_id,
     google::protobuf::Empty,
 };
+use tracing::debug;
 
 use crate::{api::entity, state::ApiState};
 
@@ -56,13 +58,14 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).map_err(map_err)?;
 
-        let subject = format!("{}.update.index.set", self.subject);
+        let event = Event::SetAll(self.entity.clone()).to_string();
 
         let _ = self
             .state
             .jetstream_context
-            .publish(subject, buf.into())
+            .publish(event, buf.into())
             .await;
+        debug!("message published");
 
         Ok(tonic::Response::new(category))
     }
@@ -107,13 +110,14 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).expect("Failed to encode message");
 
-        let subject = format!("{}.update.index.update", self.subject);
+        let event = Event::UpdateAll(self.entity.clone()).to_string();
 
         let _ = self
             .state
             .jetstream_context
-            .publish(subject, buf.into())
+            .publish(event, buf.into())
             .await;
+        debug!("message published");
 
         Ok(tonic::Response::new(category))
     }
@@ -131,14 +135,12 @@ impl MutateCategories for ApiState {
             .execute(&self.state.db_pool)
             .await
             .map_err(map_err)?;
+        debug!("row deleted");
 
-        let subject = format!("{}.update.index.delete", self.subject);
+        let event = Event::DeleteAll(self.entity.clone()).to_string();
 
-        let _ = self
-            .state
-            .jetstream_context
-            .publish(subject, id.into())
-            .await;
+        let _ = self.state.jetstream_context.publish(event, id.into()).await;
+        debug!("message published");
 
         Ok(tonic::Response::new(Empty::default()))
     }

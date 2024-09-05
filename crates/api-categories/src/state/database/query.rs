@@ -1,6 +1,9 @@
-use core_services::cache::{
-    key::{CacheKey, CursorParams},
-    PoolLike, PooledConnection, PooledConnectionLike,
+use core_services::{
+    cache::{
+        key::{CacheKey, CursorParams, Index},
+        PoolLike, PooledConnection, PooledConnectionLike,
+    },
+    state::events::Event,
 };
 use futures_util::TryFutureExt;
 use prost::Message;
@@ -12,7 +15,7 @@ use sellershut_core::{
     common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
-use tracing::{debug, error, info_span, trace, Instrument};
+use tracing::{debug, error, info_span, instrument, trace, warn, Instrument};
 
 use crate::{
     api::entity::{self, to_offset_datetime},
@@ -46,7 +49,7 @@ impl QueryCategories for ApiState {
         let get_count: i64 = actual_count as i64 + 1;
 
         // a cursor was specified
-        let connection = if let Some(ref cursor) = pagination.cursor_value {
+        let (connection, cache_ok) = if let Some(ref cursor) = pagination.cursor_value {
             // get cursor
             let cursor_value = cursor.cursor_type.as_ref().ok_or_else(|| {
                 tonic::Status::new(tonic::Code::Internal, "Cursor type is not set")
@@ -62,15 +65,16 @@ impl QueryCategories for ApiState {
                     // try cache first
                     let cache_key = CacheKey::Categories(CursorParams {
                         cursor: Some(cursor),
-                        index: core_services::cache::key::Index::After(actual_count),
+                        index: core_services::cache::key::Index::First(actual_count),
                     });
 
                     let cache_result = read_cache(cache_key, cache).await;
+                    let is_cache_ok = cache_result.is_ok();
 
                     let connection = match cache_result {
                         Ok(result) => result,
                         Err(e) => {
-                            error!("cache read {e}");
+                            warn!("cache read {e}");
 
                             let cursor = decode_cursor(cursor_value)?;
                             let id = cursor.id();
@@ -134,21 +138,22 @@ impl QueryCategories for ApiState {
                             connection
                         }
                     };
-                    connection
+                    (connection, is_cache_ok)
                 }
                 CursorType::Before(cursor) => {
                     // try cache first
                     let cache_key = CacheKey::Categories(CursorParams {
                         cursor: Some(cursor),
-                        index: core_services::cache::key::Index::Before(actual_count),
+                        index: core_services::cache::key::Index::Last(actual_count),
                     });
 
                     let cache_result = read_cache(cache_key, cache).await;
+                    let is_cache_ok = cache_result.is_ok();
 
                     let connection = match cache_result {
                         Ok(result) => result,
                         Err(e) => {
-                            error!("cache read {e}");
+                            warn!("cache read {e}");
 
                             let cursor = decode_cursor(cursor_value)?;
                             let id = cursor.id();
@@ -205,41 +210,65 @@ impl QueryCategories for ApiState {
                             connection
                         }
                     };
-                    connection
+                    (connection, is_cache_ok)
                 }
             };
             connection
         } else {
-            let categories = sqlx::query_as!(
-                entity::Category,
-                "select * FROM category order by created_at asc
-                limit $1",
-                get_count
-            )
-            .fetch_all(&self.state.db_pool)
-            .await
-            .map_err(map_err)?;
+            // try cache first
+            let cache_key = CacheKey::Categories(CursorParams {
+                cursor: None,
+                index: {
+                    /* core_services::cache::key::Index::Before(actual_count), */
+                    match pagination.index.expect("index to be available") {
+                        pagination::cursor::Index::First(count) => Index::First(count),
+                        pagination::cursor::Index::Last(count) => Index::Last(count),
+                    }
+                },
+            });
 
-            let connection = parse_categories(
-                Some(get_count - categories.len() as i64),
-                categories.into_iter().map(Category::from).collect(),
-                &pagination,
-                actual_count,
-            )?;
+            let cache_result = read_cache(cache_key, cache).await;
+            let is_cache_ok = cache_result.is_ok();
 
-            connection
+            let connection = match cache_result {
+                Ok(result) => result,
+                Err(ref _e) => {
+                    let categories = sqlx::query_as!(
+                        entity::Category,
+                        "select * FROM category
+                            order by
+                                created_at asc
+                            limit $1",
+                        get_count
+                    )
+                    .fetch_all(&self.state.db_pool)
+                    .await
+                    .map_err(map_err)?;
+
+                    let connection = parse_categories(
+                        Some(get_count - categories.len() as i64),
+                        categories.into_iter().map(Category::from).collect(),
+                        &pagination,
+                        actual_count,
+                    )?;
+                    connection
+                }
+            };
+            (connection, is_cache_ok)
         };
 
-        let byte_data = connection.clone().encode_to_vec();
+        if !cache_ok {
+            let byte_data = connection.clone().encode_to_vec();
 
-        let subject = format!("{}.update.set", self.subject);
+            let event = Event::UpdateCache(self.entity.clone()).to_string();
 
-        let _ = self
-            .state
-            .jetstream_context
-            .publish(subject, byte_data.into())
-            .await;
-        debug!("message published");
+            let _ = self
+                .state
+                .jetstream_context
+                .publish(event, byte_data.into())
+                .await;
+            debug!("message published");
+        }
 
         Ok(tonic::Response::new(connection))
     }
@@ -297,13 +326,14 @@ impl QueryCategories for ApiState {
                 let mut buf = Vec::new();
                 req.encode(&mut buf).map_err(map_err)?;
 
-                let subject = format!("{}.update.set", self.subject);
+                let event = Event::UpdateCache(self.entity.clone()).to_string();
 
                 let _ = self
                     .state
                     .jetstream_context
-                    .publish(subject, buf.into())
+                    .publish(event, buf.into())
                     .await;
+                debug!("message published");
 
                 category
             }
@@ -323,6 +353,7 @@ impl QueryCategories for ApiState {
     }
 }
 
+#[instrument(skip(cache))]
 async fn read_cache(
     cache_key: CacheKey<'_>,
     mut cache: PooledConnection<'_>,
@@ -360,7 +391,12 @@ fn parse_categories(
     let has_more = len > user_count;
 
     let categories = if has_more {
-        categories.into_iter().take(user_count).collect()
+        categories
+            .into_iter()
+            .rev() // need to take from the right hand side
+            .take(user_count)
+            .rev() // restore the order
+            .collect()
     } else {
         categories
     };

@@ -64,6 +64,7 @@ impl CursorBuilder {
     /// encode a cursor
     #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn encode(&self) -> String {
+        #[cfg(feature = "tracing")]
         tracing::trace!("encoding cursor");
         BASE64_URL_SAFE_NO_PAD.encode(format!("{}|{}", self.dt, self.id))
     }
@@ -102,6 +103,7 @@ impl CursorBuilder {
 /// Gets maximum query results from pagination data
 #[cfg_attr(feature = "tracing", tracing::instrument)]
 pub fn query_count(max: i32, pagination: &Index) -> i32 {
+    #[cfg(feature = "tracing")]
     tracing::trace!("determing items to return");
 
     let user_param = match pagination {

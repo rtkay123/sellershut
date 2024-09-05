@@ -4,6 +4,9 @@ pub mod config;
 /// Service Error Types
 pub mod error;
 
+/// Events
+pub mod events;
+
 #[cfg(feature = "nats")]
 use async_nats::jetstream::Context;
 

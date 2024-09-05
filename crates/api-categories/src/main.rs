@@ -1,6 +1,8 @@
 mod api;
 mod routes;
 mod state;
+#[cfg(test)]
+mod tests;
 
 use api::ApiSchemaBuilder;
 use axum::{extract::Request, http::header::CONTENT_TYPE};

@@ -3,12 +3,12 @@ mod database;
 use std::path::Path;
 
 use async_nats::jetstream::stream;
-use core_services::state::{config::env_var, ServiceState};
+use core_services::state::{config::env_var, events::Entity, ServiceState};
 
 #[derive(Clone)]
 pub struct ApiState {
     pub state: ServiceState,
-    pub subject: std::sync::Arc<str>,
+    pub entity: Entity,
 }
 
 impl ApiState {
@@ -41,7 +41,7 @@ impl ApiState {
 
         Ok(Self {
             state,
-            subject: stream.into(),
+            entity: Entity::categories(stream),
         })
     }
 }

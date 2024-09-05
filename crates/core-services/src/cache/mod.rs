@@ -273,7 +273,7 @@ impl PoolLike for ClusteredRedisPool {
     }
 }
 
-pub(crate) async fn new_redis_pool_helper() -> RedisPool {
+pub async fn new_redis_pool_helper() -> RedisPool {
     let redis_dsn = env_var("REDIS_DSN");
     let clustered = env_var("REDIS_IS_CLUSTER").to_lowercase() == "true";
     let max_connections = env_var("REDIS_POOL_MAX_CONNECTIONS")

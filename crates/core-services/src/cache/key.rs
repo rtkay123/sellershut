@@ -26,8 +26,8 @@ impl Display for CursorParams<'_> {
                 None => "[NONE]",
             },
             match self.index {
-                Index::After(v) => format!("after:{v}"),
-                Index::Before(v) => format!("before:{v}"),
+                Index::First(v) => format!("first:{v}"),
+                Index::Last(v) => format!("last:{v}"),
             }
         )
     }
@@ -35,8 +35,8 @@ impl Display for CursorParams<'_> {
 
 #[derive(Clone, Copy, Debug)]
 pub enum Index {
-    After(i32),
-    Before(i32),
+    First(i32),
+    Last(i32),
 }
 
 impl Display for CacheKey<'_> {

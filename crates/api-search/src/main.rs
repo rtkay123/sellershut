@@ -106,8 +106,11 @@ async fn handler(State(state): State<Arc<ApiState>>) -> Html<&'static str> {
         "Who are you voting for in 2020?".into(),
         "The prime minister has announced a stimulus package which was widely criticized by the opposition.".into()
     ];
-    let res = state.classifier.predict(texts).await;
-    println!("{res:?}");
+    #[cfg(feature = "nlp")]
+    {
+        let res = state.classifier.predict(texts).await;
+        println!("{res:?}");
+    }
     Html("<h1>Hello, World!</h1>")
 }
 
