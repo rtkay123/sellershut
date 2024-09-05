@@ -25,6 +25,8 @@ impl ApiState {
             .collect();
         let stream_max_bytes = env_var("JETSTREAM_MAX_BYTES");
 
+        println!("{stream}");
+
         state
             .jetstream_context
             .get_or_create_stream(stream::Config {
