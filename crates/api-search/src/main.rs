@@ -102,12 +102,12 @@ async fn main() -> Result<()> {
 }
 
 async fn handler(State(state): State<Arc<ApiState>>) -> Html<&'static str> {
-    let texts = vec![
+    #[cfg(feature = "nlp")]
+    {
+        let texts = vec![
         "Who are you voting for in 2020?".into(),
         "The prime minister has announced a stimulus package which was widely criticized by the opposition.".into()
     ];
-    #[cfg(feature = "nlp")]
-    {
         let res = state.classifier.predict(texts).await;
         println!("{res:?}");
     }
