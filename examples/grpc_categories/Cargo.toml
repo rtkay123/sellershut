@@ -1,0 +1,11 @@
+[package]
+name = "grpc_categories"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+
+[dependencies]
+sellershut-core = { workspace = true, features = ["rpc-client-categories", "rpc-server-categories"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true

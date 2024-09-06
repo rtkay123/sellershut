@@ -156,7 +156,7 @@ async fn process_event(
             match entity {
                 Entity::Categories => {
                     unimplemented!()
-                },
+                }
                 _ => todo!(),
             }
         }

@@ -43,6 +43,14 @@ Serialisation and deserialisation of a `Category` with serde:
     ```rust
     cargo run --example serde
     ```
+- [`grpc_categories`](../../examples/grpc_categories/)
+A gRPC client and server implementation for querying categories
+    ```rust
+    cargo run --example grpc_server_categories
+    cargo run --example grpc_client_categories
+    ```
+> [!IMPORTANT]  
+> Run the server first 
 
 ## Contributing
 

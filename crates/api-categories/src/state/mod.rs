@@ -39,7 +39,7 @@ impl ApiState {
                     } else {
                         false
                     }
-                },
+                }
                 None => false,
             }
         });
