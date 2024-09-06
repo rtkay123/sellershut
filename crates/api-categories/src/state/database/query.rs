@@ -15,7 +15,7 @@ use sellershut_core::{
     common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
-use tracing::{debug, error, info_span, instrument, trace, warn, Instrument};
+use tracing::{debug, info_span, instrument, trace, warn, Instrument};
 
 use crate::{
     api::entity::{self, to_offset_datetime},
@@ -125,9 +125,6 @@ impl QueryCategories for ApiState {
                             let (count_on_other_end, categories) =
                                 tokio::try_join!(fut_count, fut_categories)?;
 
-                            let categories: Vec<_> =
-                                categories.into_iter().map(Category::from).collect();
-
                             let connection = parse_categories(
                                 count_on_other_end,
                                 categories,
@@ -201,9 +198,6 @@ impl QueryCategories for ApiState {
 
                             let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
 
-                            let categories: Vec<_> =
-                                categories.into_iter().map(Category::from).collect();
-
                             let connection =
                                 parse_categories(count, categories, &pagination, actual_count)?;
 
@@ -247,7 +241,7 @@ impl QueryCategories for ApiState {
 
                     let connection = parse_categories(
                         Some(get_count - categories.len() as i64),
-                        categories.into_iter().map(Category::from).collect(),
+                        categories,
                         &pagination,
                         actual_count,
                     )?;
@@ -375,7 +369,7 @@ async fn read_cache(
 
 fn parse_categories(
     count_on_other_end: Option<i64>,
-    categories: Vec<Category>,
+    categories: Vec<entity::Category>,
     pagination: &Cursor,
     actual_count: i32,
 ) -> Result<Connection, tonic::Status> {
@@ -390,43 +384,43 @@ fn parse_categories(
 
     let has_more = len > user_count;
 
-    let categories = if has_more {
+    let to_node = |category: entity::Category| -> Result<Node, tonic::Status> {
+        let category = Category::from(category);
+        let categories = to_offset_datetime(category.created_at)
+            .map_err(|_| tonic::Status::invalid_argument("timestamp is invalid"))
+            .and_then(|result| {
+                result
+                    .to_offset(UtcOffset::UTC)
+                    .format(&Rfc3339)
+                    .map(|dt| {
+                        let cursor = CursorBuilder::new(&category.id, &dt);
+                        Node {
+                            node: Some(category),
+                            cursor: cursor.encode(),
+                        }
+                    })
+                    .map_err(map_err)
+            });
+        categories
+    };
+
+    let categories: Result<Vec<_>, _> = if has_more {
         categories
             .into_iter()
             .rev() // need to take from the right hand side
             .take(user_count)
             .rev() // restore the order
+            .map(|category| to_node(category))
             .collect()
     } else {
         categories
+            .into_iter()
+            .map(|category| to_node(category))
+            .collect()
     };
 
     let connection = Connection {
-        edges: {
-            let categories: Result<Vec<_>, _> = categories
-                .into_iter()
-                .map(|category| {
-                    to_offset_datetime(category.created_at)
-                        .map_err(|_| tonic::Status::invalid_argument("timestamp is invalid"))
-                        .and_then(|result| {
-                            result
-                                .to_offset(UtcOffset::UTC)
-                                .format(&Rfc3339)
-                                .map(|dt| {
-                                    let cursor = CursorBuilder::new(&category.id, &dt);
-                                    Node {
-                                        node: Some(category),
-                                        cursor: cursor.encode(),
-                                    }
-                                })
-                                .map_err(map_err)
-                        })
-                })
-                .collect();
-            let categories = categories?;
-            categories
-        },
-
+        edges: categories?,
         page_info: Some(PageInfo {
             has_next_page: {
                 if cursor_unavailable || left_side {
