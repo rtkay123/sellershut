@@ -5,7 +5,10 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use async_nats::jetstream::{consumer, stream};
 use core_services::{
-    cache::{key::CacheKey, PoolLike, PooledConnectionLike},
+    cache::{
+        key::{CacheKey, CursorParams, Index},
+        PoolLike, PooledConnectionLike,
+    },
     state::{
         config::env_var,
         events::{Entity, Event},
@@ -17,7 +20,10 @@ use futures_util::{
     StreamExt, TryFutureExt,
 };
 use prost::Message;
-use sellershut_core::categories::{self, Category};
+use sellershut_core::{
+    categories::{self, CacheCategoriesConnectionRequest, Category},
+    common::pagination::{cursor::cursor_value::CursorType, Cursor},
+};
 use state::ApiState;
 use tracing::{debug, error, info, instrument, trace, warn};
 
@@ -135,7 +141,20 @@ async fn process_event(
             _ => todo!(),
         },
         Event::UpdateBatch(entity) => match entity {
-            Entity::Categories => {}
+            Entity::Categories => {
+                trace!(entity = ?entity, "decoding payload");
+                let category = CacheCategoriesConnectionRequest::decode(payload)?;
+
+                if let Some((cursor, index)) = get_cursor_params(category.pagination) {
+                    let cache_key = CacheKey::Categories(CursorParams {
+                        cursor: cursor.as_deref(),
+                        index,
+                    });
+                    write_to_cache(cache_key, payload, state).await?;
+                } else {
+                    error!("pagination is missing from payload");
+                }
+            }
             _ => todo!(),
         },
         Event::DeleteSingle(entity) => {
@@ -169,6 +188,35 @@ async fn process_event(
         error!("{e}");
     }
     Ok(())
+}
+
+fn get_cursor_params<'a>(pagination: Option<Cursor>) -> Option<(Option<String>, Index)> {
+    if let Some(pagination) = pagination {
+        if let Some(index) = pagination.index {
+            let index = match index {
+                sellershut_core::common::pagination::cursor::Index::First(value) => {
+                    Index::First(value)
+                }
+                sellershut_core::common::pagination::cursor::Index::Last(value) => {
+                    Index::Last(value)
+                }
+            };
+
+            let cursor = pagination.cursor_value.and_then(|value| {
+                value.cursor_type.map(|value| match value {
+                    CursorType::After(value) => value,
+                    CursorType::Before(value) => value,
+                })
+            });
+            Some((cursor, index))
+        } else {
+            error!("index is missing from pagination params");
+            None
+        }
+    } else {
+        error!("pagination is missing from payload");
+        None
+    }
 }
 
 #[instrument(err(Debug), skip(state, payload))]

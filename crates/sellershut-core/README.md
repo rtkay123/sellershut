@@ -10,7 +10,7 @@
 
 ### Category Features
 
-These features are related to the types and functionalities used by the [Categories API](../crates/api-categories):
+These features are related to the types and functionalities used by the [Categories API](../api-categories):
 
 - **`categories`**: Enables the `Category` as well as types related to it used in pagination
 - **`rpc-client-categories`**: Generates a gRPC client implementations

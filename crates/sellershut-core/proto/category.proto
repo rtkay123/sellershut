@@ -63,6 +63,12 @@ enum CategoryEvent {
   DELETE = 2;
 }
 
+// Cache categories
+message CacheCategoriesConnectionRequest {
+  Connection connection = 1; // Connection details
+  common.pagination.Cursor pagination = 2; // Pagination Properties
+}
+
 // The Category Query service
 service QueryCategories {
   // gets all categories

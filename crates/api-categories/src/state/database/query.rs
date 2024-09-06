@@ -9,8 +9,8 @@ use futures_util::TryFutureExt;
 use prost::Message;
 use sellershut_core::{
     categories::{
-        query_categories_server::QueryCategories, Category, CategoryEvent, Connection,
-        GetCategoryRequest, GetSubCategoriesRequest, Node, UpsertCategoryRequest,
+        query_categories_server::QueryCategories, CacheCategoriesConnectionRequest, Category,
+        CategoryEvent, Connection, GetCategoryRequest, GetSubCategoriesRequest, Node,
     },
     common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
@@ -252,14 +252,18 @@ impl QueryCategories for ApiState {
         };
 
         if !cache_ok {
-            let byte_data = connection.clone().encode_to_vec();
+            let payload = CacheCategoriesConnectionRequest {
+                connection: Some(connection.clone()),
+                pagination: Some(pagination),
+            }
+            .encode_to_vec();
 
             let event = Event::UpdateBatch(Entity::Categories).to_string();
 
             let _ = self
                 .state
                 .jetstream_context
-                .publish(event, byte_data.into())
+                .publish(event, payload.into())
                 .await;
             debug!("message published");
         }
