@@ -49,8 +49,8 @@ A gRPC client and server implementation for querying categories
     cargo run --example grpc_server_categories
     cargo run --example grpc_client_categories
     ```
-> [!IMPORTANT]  
-> Run the server first 
+    > [!IMPORTANT]  
+    > Run the server first 
 
 ## Contributing
 
