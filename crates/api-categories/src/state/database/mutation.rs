@@ -79,7 +79,8 @@ impl MutateCategories for ApiState {
     ) -> Result<tonic::Response<Category>, tonic::Status> {
         let category = request.into_inner().category.expect("category to exist");
         // Check if the value fits within the range of i64
-        let category = sqlx::query!(
+        let category = sqlx::query_as!(
+            entity::Category,
             "update category set name = $2, sub_categories = $3, image_url = $4, parent_id = $5
                 where id = $1 returning *",
             category.id,
@@ -92,23 +93,9 @@ impl MutateCategories for ApiState {
         .await
         .map_err(map_err)?;
 
-        let category = Category::from(entity::Category {
-            created_at: category.created_at,
-            updated_at: category.updated_at,
-            id: category.id,
-            name: category.name,
-            sub_categories: category.sub_categories,
-            parent_id: category.parent_id,
-            image_url: category.image_url,
-        });
+        let category = Category::from(category);
 
-        let req = UpsertCategoryRequest {
-            category: Some(category.clone()),
-            event: CategoryEvent::Create.into(),
-        };
-
-        let mut buf = Vec::new();
-        req.encode(&mut buf).expect("Failed to encode message");
+        let buf = category.encode_to_vec();
 
         let event = Event::UpdateSingle(Entity::Categories).to_string();
 

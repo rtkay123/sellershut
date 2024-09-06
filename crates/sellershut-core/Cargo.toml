@@ -16,12 +16,11 @@ tracing = { workspace = true, optional = true }
 
 [features]
 default = []
-categories = ["tonic"]
+categories = ["dep:tonic", "dep:prost"]
 id-gen = ["dep:nanoid"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:base64", "dep:tonic-types"]
 serde = ["dep:serde", "serde/derive"]
-tonic = ["dep:tonic", "dep:prost"]
 tracing = ["dep:tracing"]
 
 [build-dependencies]

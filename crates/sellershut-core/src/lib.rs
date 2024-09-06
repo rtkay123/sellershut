@@ -5,7 +5,7 @@ pub mod categories;
 #[cfg_attr(
     docsrs,
     doc(cfg(
-        all(feature = "tonic", feature = "categories"),
+        feature = "categories"
         // all(feature = "tonic", any(feature = "categories", feature = "users")),
     ))
 )]

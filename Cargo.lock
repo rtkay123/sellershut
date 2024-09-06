@@ -2967,6 +2967,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_integration"
+version = "0.1.0"
+dependencies = [
+ "sellershut-core",
+ "serde_json",
+]
+
+[[package]]
 name = "serde_json"
 version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -17,7 +17,7 @@ use futures_util::{
     StreamExt, TryFutureExt,
 };
 use prost::Message;
-use sellershut_core::categories::Category;
+use sellershut_core::categories::{self, Category};
 use state::ApiState;
 use tracing::{debug, error, info, instrument, trace, warn};
 
@@ -110,7 +110,6 @@ async fn process_event(
     state: &ServiceState,
     message: async_nats::jetstream::Message,
 ) -> anyhow::Result<()> {
-    let mut cache = state.cache.get().await?;
     let payload = message.payload.as_ref();
 
     match event {
@@ -120,8 +119,7 @@ async fn process_event(
                 let category = Category::decode(payload)?;
 
                 let cache_key = CacheKey::Category(&category.id);
-                trace!(key = ?cache_key, "writing to cache");
-                let _ = cache.pset_ex::<_, _, ()>(cache_key, payload, 20).await?;
+                write_to_cache(cache_key, payload, state).await?;
             }
             _ => {}
         },
@@ -132,14 +130,36 @@ async fn process_event(
                 let category = Category::decode(payload)?;
 
                 let cache_key = CacheKey::Category(&category.id);
-                trace!(key = ?cache_key, "writing to cache");
-                let _ = cache.pset_ex::<_, _, ()>(cache_key, payload, 20000).await?;
+                write_to_cache(cache_key, payload, state).await?;
             }
             _ => todo!(),
         },
-        Event::UpdateBatch(_) => {}
-        Event::DeleteSingle(_) => {}
-        Event::DeleteBatch(_) => {}
+        Event::UpdateBatch(entity) => match entity {
+            Entity::Categories => {}
+            _ => todo!(),
+        },
+        Event::DeleteSingle(entity) => {
+            let mut cache = state.cache.get().await?;
+            match entity {
+                Entity::Categories => {
+                    trace!(entity = ?entity, "decoding payload");
+                    let category = Category::decode(payload)?;
+
+                    let cache_key = CacheKey::Category(&category.id);
+                    cache.del::<_, ()>(cache_key).await?;
+                }
+                _ => todo!(),
+            }
+        }
+        Event::DeleteBatch(entity) => {
+            let _cache = state.cache.get().await?;
+            match entity {
+                Entity::Categories => {
+                    unimplemented!()
+                },
+                _ => todo!(),
+            }
+        }
         Event::CacheUpdateSingle(_) => {}
         Event::CacheUpdateBatch(_) => {}
         _ => {}
@@ -149,4 +169,15 @@ async fn process_event(
         error!("{e}");
     }
     Ok(())
+}
+
+#[instrument(err(Debug), skip(state, payload))]
+async fn write_to_cache(
+    cache_key: CacheKey<'_>,
+    payload: &[u8],
+    state: &ServiceState,
+) -> anyhow::Result<()> {
+    let mut cache = state.cache.get().await?;
+    trace!(key = ?cache_key, "writing to cache");
+    Ok(cache.pset_ex::<_, _, ()>(cache_key, payload, 20).await?)
 }

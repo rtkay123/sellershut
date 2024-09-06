@@ -1,23 +1,9 @@
 /// Pagination
-#[cfg(all(
-    feature = "tonic",
-    any(
-        feature = "categories",
-        feature = "rpc-client-categories",
-        feature = "rpc-server-categories",
-    )
-))]
+#[cfg(any(feature = "categories"))]
 pub mod pagination;
 
 /// Utils
-#[cfg(all(
-    feature = "tonic",
-    any(
-        feature = "categories",
-        feature = "rpc-client-categories",
-        feature = "rpc-server-categories",
-    )
-))]
+#[cfg(any(feature = "categories"))]
 pub mod utils;
 
 #[cfg(feature = "id-gen")]
