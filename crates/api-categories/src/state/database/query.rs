@@ -254,7 +254,7 @@ impl QueryCategories for ApiState {
         if !cache_ok {
             let byte_data = connection.clone().encode_to_vec();
 
-            let event = Event::UpdateCache(Entity::Categories).to_string();
+            let event = Event::UpdateBatch(Entity::Categories).to_string();
 
             let _ = self
                 .state
@@ -300,7 +300,10 @@ impl QueryCategories for ApiState {
             .await;
 
         let category = match cache_result {
-            Ok(category) => category,
+            Ok(category) => {
+                debug!("returning cached data");
+                category
+            }
             Err(e) => {
                 debug!("cache read error: {e}");
                 let category =
@@ -312,15 +315,9 @@ impl QueryCategories for ApiState {
                 // update cache
                 let category = Category::from(category);
 
-                let req = UpsertCategoryRequest {
-                    category: Some(category.clone()),
-                    event: CategoryEvent::Create.into(),
-                };
+                let buf = category.encode_to_vec();
 
-                let mut buf = Vec::new();
-                req.encode(&mut buf).map_err(map_err)?;
-
-                let event = Event::UpdateCache(Entity::Categories).to_string();
+                let event = Event::UpdateSingle(Entity::Categories).to_string();
 
                 let _ = self
                     .state

@@ -35,14 +35,22 @@ impl FromStr for Entity {
 #[derive(Debug, Clone, Copy)]
 /// Events
 pub enum Event {
-    /// Sets cache and search index
-    SetAll(Entity),
-    /// Updates cache and search index
-    UpdateAll(Entity),
-    /// Deletes cache and search index
-    DeleteAll(Entity),
-    /// Updates cache only
-    UpdateCache(Entity),
+    /// Sets a single item in cache and search index
+    SetSingle(Entity),
+    /// Sets a batch of items in cache and search index
+    SetBatch(Entity),
+    /// Updates a single item in cache and search index
+    UpdateSingle(Entity),
+    /// Updates a batch of items in cache and search index
+    UpdateBatch(Entity),
+    /// Deletes a single item from cache and search index
+    DeleteSingle(Entity),
+    /// Deletes a batch of items from cache and search index
+    DeleteBatch(Entity),
+    /// Updates a single item in cache only
+    CacheUpdateSingle(Entity),
+    /// Updates a batch of items in cache only
+    CacheUpdateBatch(Entity),
 }
 
 impl Display for Event {
@@ -51,17 +59,29 @@ impl Display for Event {
             f,
             "{}",
             match self {
-                Event::SetAll(entity) => {
-                    format!("{entity}.update.index.set")
+                Event::SetSingle(entity) => {
+                    format!("{entity}.update.index.set.single")
                 }
-                Event::UpdateAll(entity) => {
-                    format!("{entity}.update.index.update")
+                Event::SetBatch(entity) => {
+                    format!("{entity}.update.index.set.batch")
                 }
-                Event::DeleteAll(entity) => {
-                    format!("{entity}.update.index.delete")
+                Event::UpdateSingle(entity) => {
+                    format!("{entity}.update.index.update.single")
                 }
-                Event::UpdateCache(entity) => {
-                    format!("{entity}.update.set")
+                Event::UpdateBatch(entity) => {
+                    format!("{entity}.update.index.update.batch")
+                }
+                Event::CacheUpdateSingle(entity) => {
+                    format!("{entity}.update.set.single")
+                }
+                Event::DeleteSingle(entity) => {
+                    format!("{entity}.update.index.delete.single")
+                }
+                Event::DeleteBatch(entity) => {
+                    format!("{entity}.update.index.delete.batch")
+                }
+                Event::CacheUpdateBatch(entity) => {
+                    format!("{entity}.update.set.single")
                 }
             }
         )
@@ -77,18 +97,20 @@ impl FromStr for Event {
 
         let entity = Entity::from_str(entity)?;
 
-        // Extract and match the action part
-        match tokens.next() {
-            Some("update") => match tokens.next() {
-                Some("index") => match tokens.next() {
-                    Some("set") => Ok(Event::SetAll(entity)),
-                    Some("update") => Ok(Event::UpdateAll(entity)),
-                    Some("delete") => Ok(Event::DeleteAll(entity)),
-                    _ => Err(()),
-                },
-                Some("set") => Ok(Event::UpdateCache(entity)),
-                _ => Err(()),
-            },
+        let action = tokens.next().ok_or(())?;
+        let scope = tokens.next().ok_or(())?;
+        let operation = tokens.next().ok_or(())?;
+        let item = tokens.next();
+
+        match (action, scope, operation, item) {
+            ("update", "index", "set", Some("single")) => Ok(Event::SetSingle(entity)),
+            ("update", "index", "set", Some("batch")) => Ok(Event::SetBatch(entity)),
+            ("update", "index", "update", Some("single")) => Ok(Event::UpdateSingle(entity)),
+            ("update", "index", "update", Some("batch")) => Ok(Event::UpdateBatch(entity)),
+            ("update", "set", "single", None) => Ok(Event::CacheUpdateSingle(entity)),
+            ("update", "index", "delete", Some("single")) => Ok(Event::DeleteSingle(entity)),
+            ("update", "index", "delete", Some("batch")) => Ok(Event::DeleteBatch(entity)),
+            ("update", "set", "batch", None) => Ok(Event::CacheUpdateBatch(entity)),
             _ => Err(()),
         }
     }

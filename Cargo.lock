@@ -493,6 +493,7 @@ dependencies = [
  "core-services",
  "dotenvy",
  "futures-util",
+ "prost 0.13.1",
  "sellershut-core",
  "tokio",
  "tracing",

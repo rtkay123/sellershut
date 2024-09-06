@@ -1,9 +1,10 @@
 mod database;
 
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
 use async_nats::jetstream::stream;
-use core_services::state::{config::env_var, ServiceState};
+use core_services::state::{config::env_var, events::Entity, ServiceState};
+use tracing::error;
 
 #[derive(Clone)]
 pub struct ApiState {
@@ -18,13 +19,34 @@ impl ApiState {
         let state = ServiceState::initialise(env!("CARGO_CRATE_NAME")).await?;
 
         let stream = env_var("JETSTREAM_NAME");
-        let subjects = env_var("JETSTREAM_SUBJECTS")
+        let subjects: Vec<_> = env_var("JETSTREAM_SUBJECTS")
             .split(',')
             .map(String::from)
             .collect();
         let stream_max_bytes = env_var("JETSTREAM_MAX_BYTES");
 
-        println!("{stream}");
+        let valid = subjects.iter().any(|value| {
+            // Seems we're statically typing the subjects, they no longer need to be in env
+            let mut tokens = value.split('.');
+
+            let is_ok_base = tokens.next().map(|value| Entity::from_str(value).is_ok());
+
+            match is_ok_base {
+                Some(value) => {
+                    let operation = tokens.next().map(|v| (v == "update") && value);
+                    if let Some(okay) = operation {
+                        okay
+                    } else {
+                        false
+                    }
+                },
+                None => false,
+            }
+        });
+
+        if !valid {
+            error!("none of your subjects could be parsed to entities. Event dispatch will fire blanks");
+        }
 
         state
             .jetstream_context

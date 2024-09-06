@@ -2,7 +2,7 @@ use std::path::Path;
 
 use core_services::state::ServiceState;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ApiState(pub ServiceState);
 
 impl ApiState {

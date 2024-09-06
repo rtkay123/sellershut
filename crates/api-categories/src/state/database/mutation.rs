@@ -58,7 +58,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).map_err(map_err)?;
 
-        let event = Event::SetAll(Entity::Categories).to_string();
+        let event = Event::SetSingle(Entity::Categories).to_string();
 
         let _ = self
             .state
@@ -110,7 +110,7 @@ impl MutateCategories for ApiState {
         let mut buf = Vec::new();
         req.encode(&mut buf).expect("Failed to encode message");
 
-        let event = Event::UpdateAll(Entity::Categories).to_string();
+        let event = Event::UpdateSingle(Entity::Categories).to_string();
 
         let _ = self
             .state
@@ -137,7 +137,7 @@ impl MutateCategories for ApiState {
             .map_err(map_err)?;
         debug!("row deleted");
 
-        let event = Event::DeleteAll(Entity::Categories).to_string();
+        let event = Event::DeleteSingle(Entity::Categories).to_string();
 
         let _ = self.state.jetstream_context.publish(event, id.into()).await;
         debug!("message published");

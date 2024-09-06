@@ -2,15 +2,24 @@ mod state;
 
 use std::str::FromStr;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use async_nats::jetstream::{consumer, stream};
-use core_services::state::{config::env_var, events::Event};
+use core_services::{
+    cache::{key::CacheKey, PoolLike, PooledConnectionLike},
+    state::{
+        config::env_var,
+        events::{Entity, Event},
+        ServiceState,
+    },
+};
 use futures_util::{
     future::{join_all, try_join_all},
     StreamExt, TryFutureExt,
 };
+use prost::Message;
+use sellershut_core::categories::Category;
 use state::ApiState;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -73,22 +82,16 @@ async fn handle_message(
 ) -> anyhow::Result<()> {
     // Get messages
     let mut messages = consumer.messages().await?;
+    info!("consumer is ready to receive messages");
 
     while let Some(Ok(message)) = messages.next().await {
         let subject = message.subject.to_string();
 
         match Event::from_str(&subject) {
-            Ok(event) => match event {
-                Event::SetAll(entity) => {
-                    info!("set all entity = {}", entity.to_string());
-                }
-                Event::UpdateAll(_) => todo!(),
-                Event::DeleteAll(_) => todo!(),
-                Event::UpdateCache(entity) => {
-                    info!("update cache only entity = {}", entity.to_string());
-                }
-                _ => todo!(),
-            },
+            Ok(event) => {
+                let _ = process_event(event, &state.0, message).await;
+                trace!(event = ?event, "event processed");
+            }
             Err(_) => {
                 warn!(
                     subject = subject,
@@ -96,12 +99,54 @@ async fn handle_message(
                 );
             }
         }
-
-        println!("Got message {:?}", message);
-        if let Err(e) = message.ack().await {
-            eprintln!("{e}");
-        }
     }
 
+    Ok(())
+}
+
+#[instrument(err(Debug), skip(message))]
+async fn process_event(
+    event: Event,
+    state: &ServiceState,
+    message: async_nats::jetstream::Message,
+) -> anyhow::Result<()> {
+    let mut cache = state.cache.get().await?;
+    let payload = message.payload.as_ref();
+
+    match event {
+        Event::SetSingle(entity) => match entity {
+            Entity::Categories => {
+                trace!(entity = ?entity, "decoding payload");
+                let category = Category::decode(payload)?;
+
+                let cache_key = CacheKey::Category(&category.id);
+                trace!(key = ?cache_key, "writing to cache");
+                let _ = cache.pset_ex::<_, _, ()>(cache_key, payload, 20).await?;
+            }
+            _ => {}
+        },
+        Event::SetBatch(_) => {}
+        Event::UpdateSingle(entity) => match entity {
+            Entity::Categories => {
+                trace!(entity = ?entity, "decoding payload");
+                let category = Category::decode(payload)?;
+
+                let cache_key = CacheKey::Category(&category.id);
+                trace!(key = ?cache_key, "writing to cache");
+                let _ = cache.pset_ex::<_, _, ()>(cache_key, payload, 20000).await?;
+            }
+            _ => todo!(),
+        },
+        Event::UpdateBatch(_) => {}
+        Event::DeleteSingle(_) => {}
+        Event::DeleteBatch(_) => {}
+        Event::CacheUpdateSingle(_) => {}
+        Event::CacheUpdateBatch(_) => {}
+        _ => {}
+    }
+
+    if let Err(e) = message.ack().await {
+        error!("{e}");
+    }
     Ok(())
 }
