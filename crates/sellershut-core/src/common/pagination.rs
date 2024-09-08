@@ -71,16 +71,19 @@ impl CursorBuilder {
 
     /// Gets pagination direction
     pub fn is_paginating_from_left(pagination: &Cursor) -> bool {
-        if let Some(value) = pagination.cursor_value.as_ref() {
-            match value.cursor_type.as_ref() {
-                Some(val) => match val {
-                    cursor::cursor_value::CursorType::After(_) => true,
-                    cursor::cursor_value::CursorType::Before(_) => false,
-                },
-                None => true,
-            }
-        } else {
-            true
+        let index = pagination.index.expect("index should exist");
+
+        match &pagination.cursor_value {
+            Some(value) => match &value.cursor_type {
+                Some(cursor::cursor_value::CursorType::After(_)) => {
+                    matches!(index, Index::First(_))
+                }
+                Some(cursor::cursor_value::CursorType::Before(_)) => {
+                    matches!(index, Index::First(_))
+                }
+                None => matches!(index, Index::First(_)),
+            },
+            None => matches!(index, Index::First(_)),
         }
     }
 
