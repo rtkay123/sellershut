@@ -50,10 +50,13 @@ pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()
     tokio::net::TcpListener::bind(addr)
         .map_err(anyhow::Error::new)
         .and_then(|listener| async move {
-            if let Err(e) = tx.send(listener.local_addr().expect("local addr").port()) {
+            let socket_addr = listener
+                .local_addr()
+                .expect("should get socket_addr from listener");
+            if let Err(e) = tx.send(socket_addr.port()) {
                 error!("{e}");
             }
-            info!(addr = ?addr, "listening");
+            info!(addr = ?socket_addr, "listening");
 
             axum::serve(listener, Shared::new(service))
                 .await
@@ -63,6 +66,3 @@ pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests;

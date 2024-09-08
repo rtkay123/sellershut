@@ -1,2 +1,3 @@
-mod health_check;
+mod grpc;
+mod http;
 mod utils;

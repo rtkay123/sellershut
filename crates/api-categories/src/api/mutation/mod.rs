@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod tests;
-
 use async_graphql::{Context, MergedObject, Object, Result};
 use sellershut_core::categories::{
     mutate_categories_server::MutateCategories, CategoryEvent, DeleteCategoryRequest,

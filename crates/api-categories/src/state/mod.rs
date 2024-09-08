@@ -34,11 +34,7 @@ impl ApiState {
             match is_ok_base {
                 Some(value) => {
                     let operation = tokens.next().map(|v| (v == "update") && value);
-                    if let Some(okay) = operation {
-                        okay
-                    } else {
-                        false
-                    }
+                    operation.unwrap_or_default()
                 }
                 None => false,
             }

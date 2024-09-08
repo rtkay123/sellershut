@@ -4,7 +4,7 @@ use tokio::sync::oneshot;
 use crate::utils::TestApp;
 
 #[sqlx::test(migrations = "./migrations")]
-async fn test_crate(pg_pool: PgPool) -> sqlx::Result<()> {
+async fn check_health_endpoint(pg_pool: PgPool) -> sqlx::Result<()> {
     let (tx, rx) = oneshot::channel();
     let _app = TestApp::new(pg_pool, tx).await;
 

@@ -424,10 +424,7 @@ fn parse_categories(
             .map(&to_node)
             .collect()
     } else {
-        categories
-            .into_iter()
-            .map(&to_node)
-            .collect()
+        categories.into_iter().map(&to_node).collect()
     };
 
     let connection = Connection {
