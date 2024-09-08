@@ -27,7 +27,8 @@ impl MutateCategories for ApiState {
         let id = generate_id();
 
         // Check if the value fits within the range of i64
-        let category = sqlx::query!(
+        let category = sqlx::query_as!(
+            entity::Category,
             "insert into category (id, name, sub_categories, image_url, parent_id)
                 values ($1, $2, $3, $4, $5) returning *",
             &id,
@@ -40,15 +41,7 @@ impl MutateCategories for ApiState {
         .await
         .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        let category = Category::from(entity::Category {
-            created_at: category.created_at,
-            updated_at: category.updated_at,
-            id: category.id,
-            name: category.name,
-            sub_categories: category.sub_categories,
-            parent_id: category.parent_id,
-            image_url: category.image_url,
-        });
+        let category = Category::from(category);
 
         let req = UpsertCategoryRequest {
             category: Some(category.clone()),
