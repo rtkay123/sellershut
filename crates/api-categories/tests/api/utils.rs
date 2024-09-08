@@ -9,7 +9,7 @@ use core_services::{
 use sqlx::PgPool;
 use tracing::trace;
 
-use crate::{
+use api_categories::{
     api::{ApiSchema, ApiSchemaBuilder},
     routes::router,
     state::ApiState,
@@ -26,7 +26,7 @@ pub struct TestApp {
 }
 
 impl TestApp {
-    pub async fn new(pool: PgPool) -> Self {
+    pub async fn new(pool: PgPool, tx: tokio::sync::oneshot::Sender<u16>) -> Self {
         // Loads the .env file located in the environment's current directory or its parents in sequence.
         // .env used only for development, so we discard error in all other cases.
         dotenvy::dotenv().ok();
@@ -52,13 +52,15 @@ impl TestApp {
                 cache: new_redis_pool_helper().await,
                 jetstream_context,
             },
-            //            entity: "categories-test".into(),
         };
 
         trace!("building schema");
         let schema = ApiSchemaBuilder::build(state.clone());
 
         let router = router(schema.clone(), Environment::Development);
+
+        tokio::spawn(api_categories::run(state.clone(), tx));
+
         Self {
             router,
             state,

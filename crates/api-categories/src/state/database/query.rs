@@ -210,15 +210,13 @@ impl QueryCategories for ApiState {
             connection
         } else {
             // try cache first
+            let index = match pagination.index.expect("index to be available") {
+                pagination::cursor::Index::First(count) => Index::First(count),
+                pagination::cursor::Index::Last(count) => Index::Last(count),
+            };
             let cache_key = CacheKey::Categories(CursorParams {
                 cursor: None,
-                index: {
-                    /* core_services::cache::key::Index::Before(actual_count), */
-                    match pagination.index.expect("index to be available") {
-                        pagination::cursor::Index::First(count) => Index::First(count),
-                        pagination::cursor::Index::Last(count) => Index::Last(count),
-                    }
-                },
+                index,
             });
 
             let cache_result = read_cache(cache_key, cache).await;
@@ -227,17 +225,30 @@ impl QueryCategories for ApiState {
             let connection = match cache_result {
                 Ok(result) => result,
                 Err(ref _e) => {
-                    let categories = sqlx::query_as!(
-                        entity::Category,
-                        "select * FROM category
+                    let categories = match index {
+                        Index::First(_) => sqlx::query_as!(
+                            entity::Category,
+                            "select * FROM category
                             order by
                                 created_at asc
                             limit $1",
-                        get_count
-                    )
-                    .fetch_all(&self.state.db_pool)
-                    .await
-                    .map_err(map_err)?;
+                            get_count
+                        )
+                        .fetch_all(&self.state.db_pool)
+                        .await
+                        .map_err(map_err)?,
+                        Index::Last(_) => sqlx::query_as!(
+                            entity::Category,
+                            "select * FROM category
+                            order by
+                                created_at desc
+                            limit $1",
+                            get_count
+                        )
+                        .fetch_all(&self.state.db_pool)
+                        .await
+                        .map_err(map_err)?,
+                    };
 
                     let connection = parse_categories(
                         Some(get_count - categories.len() as i64),
@@ -387,7 +398,7 @@ fn parse_categories(
 
     let to_node = |category: entity::Category| -> Result<Node, tonic::Status> {
         let category = Category::from(category);
-        let categories = to_offset_datetime(category.created_at)
+        to_offset_datetime(category.created_at)
             .map_err(|_| tonic::Status::invalid_argument("timestamp is invalid"))
             .and_then(|result| {
                 result
@@ -401,8 +412,7 @@ fn parse_categories(
                         }
                     })
                     .map_err(map_err)
-            });
-        categories
+            })
     };
 
     let categories: Result<Vec<_>, _> = if has_more {
@@ -411,12 +421,12 @@ fn parse_categories(
             .rev() // need to take from the right hand side
             .take(user_count)
             .rev() // restore the order
-            .map(|category| to_node(category))
+            .map(&to_node)
             .collect()
     } else {
         categories
             .into_iter()
-            .map(|category| to_node(category))
+            .map(&to_node)
             .collect()
     };
 
