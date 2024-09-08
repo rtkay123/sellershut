@@ -12,3 +12,25 @@ pub const ID_LENGTH: usize = 21;
 pub fn generate_id() -> String {
     nanoid!(ID_LENGTH, &ID_ALPHABET)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::common::id::ID_LENGTH;
+
+    use super::generate_id;
+
+    fn check_in_id(character: char, expected_result: bool) -> String {
+        let id = generate_id();
+        let actual_result = id.contains(character);
+        assert_eq!(expected_result, actual_result);
+        id
+    }
+
+    #[test]
+    fn check_valid() {
+        check_in_id('1', false);
+        let id = check_in_id('0', false);
+
+        assert_eq!(ID_LENGTH, id.len());
+    }
+}
