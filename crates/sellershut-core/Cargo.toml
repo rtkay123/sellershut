@@ -24,7 +24,7 @@ serde = ["dep:serde", "serde/derive"]
 tracing = ["dep:tracing"]
 
 [build-dependencies]
-tonic-build = "0.12.1"
+tonic-build = { version = "0.12.1", features = ["cleanup-markdown"] }
 
 [package.metadata.docs.rs]
 all-features = true
