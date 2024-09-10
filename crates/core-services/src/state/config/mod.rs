@@ -36,9 +36,17 @@ pub struct Configuration {
     #[cfg(feature = "tracing-loki")]
     pub loki_url: String,
     #[cfg(feature = "nats")]
+    /// Nats config
     pub nats: NatsConfig,
-    pub crate_name: String,
-    pub crate_version: String,
+    /// Pkg name
+    pub pkg_name: String,
+    /// Package version
+    pub pkg_version: String,
+    /// Package version
+    #[cfg(feature = "opentelemetry")]
+    pub otel_collector: String,
+    #[cfg(feature = "sentry")]
+    pub sentry_dsn: String,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -71,6 +79,12 @@ impl Configuration {
         #[cfg(feature = "tracing-loki")]
         let loki_url = env_var("LOKI_URL");
 
+        #[cfg(feature = "opentelemetry")]
+        let otel_collector = env_var("OPENTELEMETRY_COLLECTOR_HOST");
+
+        #[cfg(feature = "sentry")]
+        let sentry_dsn = env_var("SENTRY_DSN");
+
         #[cfg(feature = "api")]
         let listen_address = SocketAddr::from((Ipv6Addr::UNSPECIFIED, app_port));
 
@@ -101,8 +115,12 @@ impl Configuration {
             },
             #[cfg(feature = "tracing-loki")]
             loki_url,
-            crate_name: crate_name.to_string(),
-            crate_version: crate_version.to_string(),
+            pkg_name: crate_name.to_string(),
+            pkg_version: crate_version.to_string(),
+            #[cfg(feature = "opentelemetry")]
+            otel_collector,
+            #[cfg(feature = "sentry")]
+            sentry_dsn,
         }
     }
 

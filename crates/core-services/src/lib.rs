@@ -40,4 +40,12 @@ pub enum ServiceError {
     #[error(transparent)]
     /// When creating the tracing layer
     Cache(#[from] redis::RedisError),
+    #[cfg(feature = "opentelemetry")]
+    #[error(transparent)]
+    /// When creating the tracing layer
+    Opentelemetry(#[from] opentelemetry::trace::TraceError),
+    #[cfg(feature = "sentry")]
+    #[error(transparent)]
+    /// When creating the tracing layer
+    SentryDsn(#[from] sentry::types::ParseDsnError),
 }

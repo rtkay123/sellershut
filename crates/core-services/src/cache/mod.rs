@@ -273,10 +273,6 @@ impl PoolLike for ClusteredRedisPool {
     }
 }
 
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(target = "core_services::cache")
-)]
 pub async fn new_redis_pool_helper() -> Result<RedisPool, ServiceError> {
     let redis_dsn = env_var("REDIS_DSN");
     let clustered = env_var("REDIS_IS_CLUSTER").to_lowercase() == "true";

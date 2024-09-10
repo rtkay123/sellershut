@@ -8,7 +8,7 @@ use core_services::state::{
     events::Entity,
     ServiceState,
 };
-use tracing::{error, instrument};
+use tracing::error;
 
 #[derive(Clone)]
 pub struct ApiState {
@@ -16,7 +16,6 @@ pub struct ApiState {
 }
 
 impl ApiState {
-    #[instrument(skip(config))]
     pub async fn initialise(config: Configuration) -> anyhow::Result<Self> {
         let state = ServiceState::initialise(config).await?;
 

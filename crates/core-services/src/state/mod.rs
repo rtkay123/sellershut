@@ -37,7 +37,6 @@ pub struct ServiceState {
 
 impl ServiceState {
     /// Initialise state
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(config)))]
     pub async fn initialise(config: Configuration) -> Result<Self, StateError> {
         #[cfg(feature = "postgres")]
         let pool = {
