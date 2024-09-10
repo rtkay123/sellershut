@@ -5,6 +5,7 @@ use core_services::{
         config::{env_var, Configuration, Environment},
         ServiceState,
     },
+    tracing::TelemetryBuilder,
 };
 use sqlx::PgPool;
 use tracing::trace;
@@ -36,7 +37,7 @@ impl TestApp {
 
         // Setup tracing. Once.
         TRACING.call_once(|| {
-            core_services::telemetry::TelemetryBuilder::new("error").build();
+            TelemetryBuilder::new().build();
         });
 
         let nats_url = env_var("NATS_URL");
@@ -47,9 +48,9 @@ impl TestApp {
 
         let state = ApiState {
             state: ServiceState {
-                config: Configuration::new(),
+                config: Configuration::new("", "").into(),
                 db_pool: pool,
-                cache: new_redis_pool_helper().await,
+                cache: new_redis_pool_helper().await.unwrap(),
                 jetstream_context,
             },
         };
