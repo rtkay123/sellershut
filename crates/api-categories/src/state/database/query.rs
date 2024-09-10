@@ -15,7 +15,7 @@ use sellershut_core::{
     common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
-use tracing::{debug, info_span, instrument, trace, warn, Instrument};
+use tracing::{debug, debug_span, info_span, instrument, trace, warn, Instrument, Level};
 
 use crate::{
     api::entity::{self, to_offset_datetime},
@@ -36,7 +36,13 @@ impl QueryCategories for ApiState {
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         // get cache first
         trace!("getting cache state");
-        let cache = self.state.cache.get().await.map_err(map_err)?;
+        let cache = self
+            .state
+            .cache
+            .get()
+            .instrument(debug_span!("cache.get.pool"))
+            .await
+            .map_err(map_err)?;
 
         let pagination = request.into_inner();
 
@@ -74,20 +80,19 @@ impl QueryCategories for ApiState {
                     let cache_result = read_cache(cache_key, cache).await;
                     let is_cache_ok = cache_result.is_ok();
 
-                    let connection = match cache_result {
-                        Ok(result) => result,
-                        Err(e) => {
-                            warn!("cache read {e}");
+                    let connection = if let Ok(con) = cache_result {
+                        trace!("cache ok");
+                        con
+                    } else {
+                        let cursor = decode_cursor(cursor_value)?;
+                        let id = cursor.id();
+                        trace!("converting to date {:?}", cursor.dt());
 
-                            let cursor = decode_cursor(cursor_value)?;
-                            let id = cursor.id();
-                            debug!("converting to date {:?}", cursor.dt());
+                        let created_at =
+                            OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
 
-                            let created_at =
-                                OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
-
-                            let fut_count = sqlx::query_scalar!(
-                                "
+                        let fut_count = sqlx::query_scalar!(
+                            "
                                     select count(*) from category
                                     where 
                                         (
@@ -96,15 +101,16 @@ impl QueryCategories for ApiState {
                                         )
                                         and created_at < $1
                                 ",
-                                created_at,
-                                id,
-                            )
-                            .fetch_one(&self.state.db_pool)
-                            .map_err(map_err);
+                            created_at,
+                            id,
+                        )
+                        .fetch_one(&self.state.db_pool)
+                        .instrument(debug_span!("pg.select.count"))
+                        .map_err(map_err);
 
-                            let fut_categories = sqlx::query_as!(
-                                entity::Category,
-                                "
+                        let fut_categories = sqlx::query_as!(
+                            entity::Category,
+                            "
                                     select * from category
                                     where 
                                         (
@@ -118,24 +124,20 @@ impl QueryCategories for ApiState {
                                     limit
                                         $3
                                 ",
-                                created_at,
-                                id,
-                                get_count
-                            )
-                            .fetch_all(&self.state.db_pool)
-                            .map_err(map_err);
+                            created_at,
+                            id,
+                            get_count
+                        )
+                        .fetch_all(&self.state.db_pool)
+                        .instrument(debug_span!("pg.select.*"))
+                        .map_err(map_err);
 
-                            let (count_on_other_end, categories) =
-                                tokio::try_join!(fut_count, fut_categories)?;
+                        let (count_on_other_end, categories) =
+                            tokio::try_join!(fut_count, fut_categories)?;
 
-                            parse_categories(
-                                count_on_other_end,
-                                categories,
-                                &pagination,
-                                actual_count,
-                            )?
-                        }
+                        parse_categories(count_on_other_end, categories, &pagination, actual_count)?
                     };
+
                     (connection, is_cache_ok)
                 }
                 CursorType::Before(cursor) => {
@@ -148,18 +150,17 @@ impl QueryCategories for ApiState {
                     let cache_result = read_cache(cache_key, cache).await;
                     let is_cache_ok = cache_result.is_ok();
 
-                    let connection = match cache_result {
-                        Ok(result) => result,
-                        Err(e) => {
-                            warn!("cache read {e}");
+                    let connection = if let Ok(con) = cache_result {
+                        trace!("cache ok");
+                        con
+                    } else {
+                        let cursor = decode_cursor(cursor_value)?;
+                        let id = cursor.id();
+                        let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339)
+                            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-                            let cursor = decode_cursor(cursor_value)?;
-                            let id = cursor.id();
-                            let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339)
-                                .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-                            let fut_count = sqlx::query_scalar!(
-                                "
+                        let fut_count = sqlx::query_scalar!(
+                            "
                                     select count(*) from category
                                     where 
                                         (
@@ -168,15 +169,16 @@ impl QueryCategories for ApiState {
                                         )
                                         and created_at >= $1
                                 ",
-                                created_at,
-                                id,
-                            )
-                            .fetch_one(&self.state.db_pool)
-                            .map_err(map_err);
+                            created_at,
+                            id,
+                        )
+                        .fetch_one(&self.state.db_pool)
+                        .instrument(debug_span!("pg.select.count"))
+                        .map_err(map_err);
 
-                            let fut_categories = sqlx::query_as!(
-                                entity::Category,
-                                "
+                        let fut_categories = sqlx::query_as!(
+                            entity::Category,
+                            "
                                     select * from category
                                     where 
                                         (
@@ -190,17 +192,17 @@ impl QueryCategories for ApiState {
                                     limit
                                         $3
                                 ",
-                                created_at,
-                                id,
-                                get_count
-                            )
-                            .fetch_all(&self.state.db_pool)
-                            .map_err(map_err);
+                            created_at,
+                            id,
+                            get_count
+                        )
+                        .fetch_all(&self.state.db_pool)
+                        .instrument(debug_span!("pg.select.*"))
+                        .map_err(map_err);
 
-                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                        let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
 
-                            parse_categories(count, categories, &pagination, actual_count)?
-                        }
+                        parse_categories(count, categories, &pagination, actual_count)?
                     };
                     (connection, is_cache_ok)
                 }
@@ -220,41 +222,43 @@ impl QueryCategories for ApiState {
             let cache_result = read_cache(cache_key, cache).await;
             let is_cache_ok = cache_result.is_ok();
 
-            let connection = match cache_result {
-                Ok(result) => result,
-                Err(ref _e) => {
-                    let categories = match index {
-                        Index::First(_) => sqlx::query_as!(
-                            entity::Category,
-                            "select * FROM category
+            let connection = if let Ok(con) = cache_result {
+                trace!("cache ok");
+                con
+            } else {
+                let categories = match index {
+                    Index::First(_) => sqlx::query_as!(
+                        entity::Category,
+                        "select * FROM category
                             order by
                                 created_at asc
                             limit $1",
-                            get_count
-                        )
-                        .fetch_all(&self.state.db_pool)
-                        .await
-                        .map_err(map_err)?,
-                        Index::Last(_) => sqlx::query_as!(
-                            entity::Category,
-                            "select * FROM category
+                        get_count
+                    )
+                    .fetch_all(&self.state.db_pool)
+                    .instrument(debug_span!("pg.select.*"))
+                    .await
+                    .map_err(map_err)?,
+                    Index::Last(_) => sqlx::query_as!(
+                        entity::Category,
+                        "select * FROM category
                             order by
                                 created_at desc
                             limit $1",
-                            get_count
-                        )
-                        .fetch_all(&self.state.db_pool)
-                        .await
-                        .map_err(map_err)?,
-                    };
+                        get_count
+                    )
+                    .fetch_all(&self.state.db_pool)
+                    .instrument(debug_span!("pg.select.*"))
+                    .await
+                    .map_err(map_err)?,
+                };
 
-                    parse_categories(
-                        Some(get_count - categories.len() as i64),
-                        categories,
-                        &pagination,
-                        actual_count,
-                    )?
-                }
+                parse_categories(
+                    Some(get_count - categories.len() as i64),
+                    categories,
+                    &pagination,
+                    actual_count,
+                )?
             };
             (connection, is_cache_ok)
         };
@@ -288,7 +292,13 @@ impl QueryCategories for ApiState {
         let s = info_span!("cache call");
 
         // get cache first
-        let mut cache = self.state.cache.get().await.map_err(map_err)?;
+        let mut cache = self
+            .state
+            .cache
+            .get()
+            .instrument(debug_span!("cache.get.pool"))
+            .await
+            .map_err(map_err)?;
         let cache_result = cache
             .get::<_, Vec<u8>>(&cache_key)
             .map_err(|e| tonic::Status::internal(e.to_string()))
@@ -307,14 +317,15 @@ impl QueryCategories for ApiState {
 
         let category = match cache_result {
             Ok(category) => {
-                debug!("returning cached data");
+                trace!("cache ok");
                 category
             }
-            Err(e) => {
-                debug!("cache read error: {e}");
+            Err(_e) => {
+                debug!("cache miss");
                 let category =
                     sqlx::query_as!(entity::Category, "select * from category where id = $1", id)
                         .fetch_one(&state.db_pool)
+                        .instrument(debug_span!("pg.select.*"))
                         .await
                         .map_err(map_err)?;
 
@@ -340,7 +351,13 @@ impl QueryCategories for ApiState {
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         // get cache first
         trace!("getting cache state");
-        let cache = self.state.cache.get().await.map_err(map_err)?;
+        let cache = self
+            .state
+            .cache
+            .get()
+            .instrument(debug_span!("cache.get.pool"))
+            .await
+            .map_err(map_err)?;
 
         let request = request.into_inner();
 
@@ -381,19 +398,18 @@ impl QueryCategories for ApiState {
                     let cache_result = read_cache(cache_key, cache).await;
                     let is_cache_ok = cache_result.is_ok();
 
-                    let connection = match cache_result {
-                        Ok(result) => result,
-                        Err(e) => {
-                            warn!("cache read {e}");
+                    let connection = if let Ok(con) = cache_result {
+                        trace!("cache ok");
+                        con
+                    } else {
+                        let cursor = decode_cursor(cursor_value)?;
+                        let id = cursor.id();
+                        debug!("converting to date {:?}", cursor.dt());
 
-                            let cursor = decode_cursor(cursor_value)?;
-                            let id = cursor.id();
-                            debug!("converting to date {:?}", cursor.dt());
+                        let created_at =
+                            OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
 
-                            let created_at =
-                                OffsetDateTime::parse(cursor.dt(), &Rfc3339).map_err(map_err)?;
-
-                            let fut_count = sqlx::query_scalar!(
+                        let fut_count = sqlx::query_scalar!(
                                 "
                                     select count(*) from category
                                     where 
@@ -408,9 +424,10 @@ impl QueryCategories for ApiState {
                                 parent_id
                             )
                             .fetch_one(&self.state.db_pool)
+                            .instrument(debug_span!("pg.select.count"))
                             .map_err(map_err);
 
-                            let fut_categories = sqlx::query_as!(
+                        let fut_categories = sqlx::query_as!(
                                 entity::Category,
                                 "
                                     select * from category
@@ -432,18 +449,13 @@ impl QueryCategories for ApiState {
                                 parent_id
                             )
                             .fetch_all(&self.state.db_pool)
+                            .instrument(debug_span!("pg.select.*"))
                             .map_err(map_err);
 
-                            let (count_on_other_end, categories) =
-                                tokio::try_join!(fut_count, fut_categories)?;
+                        let (count_on_other_end, categories) =
+                            tokio::try_join!(fut_count, fut_categories)?;
 
-                            parse_categories(
-                                count_on_other_end,
-                                categories,
-                                &pagination,
-                                actual_count,
-                            )?
-                        }
+                        parse_categories(count_on_other_end, categories, &pagination, actual_count)?
                     };
                     (connection, is_cache_ok)
                 }
@@ -457,17 +469,16 @@ impl QueryCategories for ApiState {
                     let cache_result = read_cache(cache_key, cache).await;
                     let is_cache_ok = cache_result.is_ok();
 
-                    let connection = match cache_result {
-                        Ok(result) => result,
-                        Err(e) => {
-                            warn!("cache read {e}");
+                    let connection = if let Ok(con) = cache_result {
+                        trace!("cache ok");
+                        con
+                    } else {
+                        let cursor = decode_cursor(cursor_value)?;
+                        let id = cursor.id();
+                        let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339)
+                            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-                            let cursor = decode_cursor(cursor_value)?;
-                            let id = cursor.id();
-                            let created_at = OffsetDateTime::parse(cursor.dt(), &Rfc3339)
-                                .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-                            let fut_count = sqlx::query_scalar!(
+                        let fut_count = sqlx::query_scalar!(
                                     "
                                     select count(*) from category
                                     where 
@@ -482,10 +493,11 @@ impl QueryCategories for ApiState {
                                     parent_id
                                 )
                                 .fetch_one(&self.state.db_pool)
+                                .instrument(debug_span!("pg.select.count"))
                                 .map_err(map_err)
                             ;
 
-                            let fut_categories = sqlx::query_as!(
+                        let fut_categories = sqlx::query_as!(
                                 entity::Category,
                                 "
                                     select * from category
@@ -507,12 +519,12 @@ impl QueryCategories for ApiState {
                                 parent_id
                             )
                             .fetch_all(&self.state.db_pool)
+                            .instrument(debug_span!("pg.select.*"))
                             .map_err(map_err);
 
-                            let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
+                        let (count, categories) = tokio::try_join!(fut_count, fut_categories)?;
 
-                            parse_categories(count, categories, &pagination, actual_count)?
-                        }
+                        parse_categories(count, categories, &pagination, actual_count)?
                     };
                     (connection, is_cache_ok)
                 }
@@ -532,47 +544,49 @@ impl QueryCategories for ApiState {
             let cache_result = read_cache(cache_key, cache).await;
             let is_cache_ok = cache_result.is_ok();
 
-            let connection = match cache_result {
-                Ok(result) => result,
-                Err(ref _e) => {
-                    let categories = match index {
-                        Index::First(_) => sqlx::query_as!(
-                            entity::Category,
-                            "select * FROM category
+            let connection = if let Ok(con) = cache_result {
+                trace!("cache ok");
+                con
+            } else {
+                let categories = match index {
+                    Index::First(_) => sqlx::query_as!(
+                        entity::Category,
+                        "select * FROM category
                             where
                                  ($2::text is not null and parent_id = $2) or parent_id is null
                             order by
                                 created_at asc
                             limit $1",
-                            get_count,
-                            parent_id
-                        )
-                        .fetch_all(&self.state.db_pool)
-                        .await
-                        .map_err(map_err)?,
-                        Index::Last(_) => sqlx::query_as!(
-                            entity::Category,
-                            "select * FROM category
+                        get_count,
+                        parent_id
+                    )
+                    .fetch_all(&self.state.db_pool)
+                    .instrument(debug_span!("pg.select.count"))
+                    .await
+                    .map_err(map_err)?,
+                    Index::Last(_) => sqlx::query_as!(
+                        entity::Category,
+                        "select * FROM category
                             where
                                  ($2::text is not null and parent_id = $2) or parent_id is null
                             order by
                                 created_at desc
                             limit $1",
-                            get_count,
-                            parent_id
-                        )
-                        .fetch_all(&self.state.db_pool)
-                        .await
-                        .map_err(map_err)?,
-                    };
+                        get_count,
+                        parent_id
+                    )
+                    .fetch_all(&self.state.db_pool)
+                    .instrument(debug_span!("pg.select.*"))
+                    .await
+                    .map_err(map_err)?,
+                };
 
-                    parse_categories(
-                        Some(get_count - categories.len() as i64),
-                        categories,
-                        &pagination,
-                        actual_count,
-                    )?
-                }
+                parse_categories(
+                    Some(get_count - categories.len() as i64),
+                    categories,
+                    &pagination,
+                    actual_count,
+                )?
             };
             (connection, is_cache_ok)
         };
@@ -592,26 +606,32 @@ impl QueryCategories for ApiState {
     }
 }
 
-#[instrument(skip(cache))]
+#[instrument(skip(cache), err(level = Level::TRACE))]
 async fn read_cache(
     cache_key: CacheKey<'_>,
     mut cache: PooledConnection<'_>,
 ) -> Result<Connection, tonic::Status> {
-    cache
+    let cache_connection = cache
         .get::<_, Vec<u8>>(&cache_key)
         .map_err(|e| tonic::Status::internal(e.to_string()))
         .and_then(|payload| async move {
             if payload.is_empty() {
-                let err = "cache is corrupted, empty bytes";
+                let err = "cache miss, empty bytes";
                 Err(tonic::Status::internal(err))
             } else {
-                Connection::decode(payload.as_ref())
+                CacheCategoriesConnectionRequest::decode(payload.as_ref())
                     .map_err(|e| tonic::Status::internal(e.to_string()))
             }
         })
         .await
+        .map_err(map_err)?;
+
+    cache_connection
+        .connection
+        .ok_or_else(|| tonic::Status::internal("corrupted cache"))
 }
 
+#[instrument(err)]
 fn parse_categories(
     count_on_other_end: Option<i64>,
     categories: Vec<entity::Category>,

@@ -5,6 +5,7 @@ pub mod state;
 use api::ApiSchemaBuilder;
 use axum::{extract::Request, http::header::CONTENT_TYPE};
 use futures_util::TryFutureExt;
+use opentelemetry::trace::TraceContextExt;
 use routes::router;
 use sellershut_core::categories::{
     mutate_categories_server::MutateCategoriesServer,
@@ -15,7 +16,9 @@ use state::ApiState;
 use tokio::sync::oneshot;
 use tonic::service::Routes;
 use tower::{make::Shared, steer::Steer};
-use tracing::{error, info};
+use tower_http::trace::TraceLayer;
+use tracing::{error, info, info_span, Span};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()> {
     let schema = ApiSchemaBuilder::build(state.clone());
@@ -23,6 +26,17 @@ pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()
     let addr = state.state.config.listen_address;
 
     let web = router(schema, state.state.config.env)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request<_>| {
+                    info_span!(
+                        "http_request",
+                        method = ?request.method(),
+                        trace_id = tracing::field::Empty,
+                    )
+                })
+                .on_request(on_request),
+        )
         .layer(NewSentryLayer::new_from_top())
         .layer(SentryHttpLayer::with_transaction());
 
@@ -35,6 +49,17 @@ pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()
         .add_service(MutateCategoriesServer::new(state.clone()));
     let grpc = grpc
         .into_axum_router()
+        .layer(
+            TraceLayer::new_for_grpc()
+                .make_span_with(|request: &Request<_>| {
+                    info_span!(
+                        "grpc_request",
+                        method = ?request.method(),
+                        trace_id = tracing::field::Empty
+                    )
+                })
+                .on_request(on_request),
+        )
         .layer(NewSentryLayer::new_from_top())
         .layer(SentryHttpLayer::with_transaction());
 
@@ -67,4 +92,9 @@ pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()
     axum::serve(listener, Shared::new(service)).await?;
 
     Ok(())
+}
+
+fn on_request<B>(_request: &Request<B>, span: &Span) {
+    let trace_id = span.context().span().span_context().trace_id();
+    span.record("trace_id", trace_id.to_string());
 }

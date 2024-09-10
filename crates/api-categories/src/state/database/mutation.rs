@@ -7,7 +7,7 @@ use sellershut_core::{
     common::id::generate_id,
     google::protobuf::Empty,
 };
-use tracing::debug;
+use tracing::{debug, debug_span, Instrument};
 
 use crate::{
     api::entity,
@@ -40,6 +40,7 @@ impl MutateCategories for ApiState {
             category.parent_id
         )
         .fetch_one(&self.state.db_pool)
+        .instrument(debug_span!("pg.insert"))
         .await
         .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
@@ -77,6 +78,7 @@ impl MutateCategories for ApiState {
             category.parent_id,
         )
         .fetch_one(&self.state.db_pool)
+        .instrument(debug_span!("pg.update"))
         .await
         .map_err(map_err)?;
 
@@ -99,6 +101,7 @@ impl MutateCategories for ApiState {
 
         sqlx::query!("delete from category where id = $1", id)
             .execute(&self.state.db_pool)
+            .instrument(debug_span!("pg.delete"))
             .await
             .map_err(map_err)?;
         debug!("row deleted");

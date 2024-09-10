@@ -37,7 +37,5 @@ async fn main() -> anyhow::Result<()> {
     let state = state::ApiState::initialise(config).await?;
     let (tx, _rx) = tokio::sync::oneshot::channel();
 
-    tracing::error!("this is an error from tracing");
-
     api_categories::run(state, tx).await
 }

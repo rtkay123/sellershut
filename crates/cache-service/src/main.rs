@@ -147,14 +147,33 @@ async fn process_event(
     message: async_nats::jetstream::Message,
 ) -> anyhow::Result<()> {
     let payload = message.payload.as_ref();
-    if let Some(ref headers) = message.headers {
+
+    let transaction = message.headers.as_ref().map(|headers| {
+        let mut hash_map = HashMap::new();
+        headers.iter().for_each(|(key, value)| {
+            for a in value.iter() {
+                hash_map.insert(key.to_string(), a.to_string());
+            }
+        });
+        let map: HashMap<_, _> = hash_map
+            .iter()
+            .map(|(a, b)| (a.as_ref(), b.as_str()))
+            .collect();
+
+        let tx_ctx = sentry::TransactionContext::continue_from_headers(
+            "cache-update",
+            "nats.jetstream",
+            map,
+        );
+
         let parent_context = global::get_text_map_propagator(|propagator| {
             let extractor = NatsMetadataExtractor(headers);
             propagator.extract(&extractor)
         });
-        Span::current().set_parent(parent_context);
-    }
 
+        Span::current().set_parent(parent_context);
+        sentry::start_transaction(tx_ctx)
+    });
     match event {
         Event::SetSingle(entity) => match entity {
             Entity::Categories => {
@@ -224,10 +243,15 @@ async fn process_event(
     if let Err(e) = message.ack().await {
         error!("{e}");
     }
+
+    if let Some(transaction) = transaction {
+        transaction.finish()
+    }
+
     Ok(())
 }
 
-fn get_cursor_params<'a>(pagination: Option<Cursor>) -> Option<(Option<String>, Index)> {
+fn get_cursor_params(pagination: Option<Cursor>) -> Option<(Option<String>, Index)> {
     if let Some(pagination) = pagination {
         if let Some(index) = pagination.index {
             let index = match index {
@@ -264,5 +288,5 @@ async fn write_to_cache(
 ) -> anyhow::Result<()> {
     let mut cache = state.cache.get().await?;
     trace!(key = ?cache_key, "writing to cache");
-    Ok(cache.pset_ex::<_, _, ()>(cache_key, payload, 20).await?)
+    Ok(cache.pset_ex::<_, _, ()>(cache_key, payload, 20000).await?)
 }

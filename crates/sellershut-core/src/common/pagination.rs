@@ -15,7 +15,6 @@ pub struct CursorBuilder {
 #[cfg(feature = "rpc-server-categories")]
 impl CursorBuilder {
     /// Create cursor
-    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn new(id: &str, dt: &str) -> Self {
         Self {
             id: id.to_string(),
@@ -23,7 +22,6 @@ impl CursorBuilder {
         }
     }
     /// decode a cursor
-    #[cfg_attr(feature = "tracing", tracing::instrument(err(Debug)))]
     pub fn decode(
         params: &cursor::cursor_value::CursorType,
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -62,10 +60,8 @@ impl CursorBuilder {
     }
 
     /// encode a cursor
-    #[cfg_attr(feature = "tracing", tracing::instrument)]
     pub fn encode(&self) -> String {
         #[cfg(feature = "tracing")]
-        tracing::trace!("encoding cursor");
         BASE64_URL_SAFE_NO_PAD.encode(format!("{}|{}", self.dt, self.id))
     }
 
@@ -104,7 +100,6 @@ impl CursorBuilder {
 }
 
 /// Gets maximum query results from pagination data
-#[cfg_attr(feature = "tracing", tracing::instrument)]
 pub fn query_count(max: i32, pagination: &Index) -> i32 {
     #[cfg(feature = "tracing")]
     tracing::trace!("determing items to return");

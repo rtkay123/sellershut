@@ -1,6 +1,8 @@
 use async_nats::{HeaderMap, HeaderName, HeaderValue};
 use opentelemetry::propagation::{Extractor, Injector};
 
+#[derive(Debug)]
+/// Wrapper for [HeaderMap] implementing [Injector]
 pub struct NatsMetadataInjector<'a>(pub &'a mut HeaderMap);
 
 impl Injector for NatsMetadataInjector<'_> {
@@ -10,6 +12,8 @@ impl Injector for NatsMetadataInjector<'_> {
     }
 }
 
+#[derive(Debug)]
+/// Wrapper for [HeaderMap] implementing [Extractor]
 pub struct NatsMetadataExtractor<'a>(pub &'a HeaderMap);
 
 impl Extractor for NatsMetadataExtractor<'_> {

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use async_nats::{jetstream::Context, HeaderMap};
+use async_nats::{jetstream::Context, HeaderMap, HeaderValue};
 use core_services::state::{events::Event, utils::NatsMetadataInjector};
 use opentelemetry::global;
 use prost::Message;
@@ -14,7 +14,7 @@ pub fn map_err(err: impl Error) -> tonic::Status {
     tonic::Status::new(tonic::Code::Internal, err.to_string())
 }
 
-#[instrument(err(Debug))]
+#[instrument(skip(value, event, jetstream), err(Debug))]
 async fn publish_event(
     value: impl Message,
     event: Event,
@@ -29,6 +29,13 @@ async fn publish_event(
         let context = Span::current().context();
         propagator.inject_context(&context, &mut NatsMetadataInjector(&mut headers))
     });
+
+    if let Some(span) = sentry::configure_scope(|scope| scope.get_span()) {
+        for (k, v) in span.iter_headers() {
+            let value = HeaderValue::from(v.as_str());
+            headers.insert(k, value);
+        }
+    }
 
     jetstream
         .publish_with_headers(event, headers, buf.into())
