@@ -8,7 +8,7 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 async-nats.workspace = true
-core-services = { workspace = true, features = ["cache-write", "nats", "rt-tokio", "telemetry"] }
+core-services = { workspace = true, features = ["cache-write", "nats", "rt-tokio"] }
 dotenvy.workspace = true
 futures-util.workspace = true
 prost.workspace = true

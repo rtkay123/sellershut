@@ -9,7 +9,7 @@ repository.workspace = true
 anyhow.workspace = true
 async-nats.workspace = true
 axum.workspace = true
-core-services = { workspace = true, features = ["api", "nats", "rt-tokio", "telemetry"] }
+core-services = { workspace = true, features = ["api", "nats", "rt-tokio"] }
 dotenvy.workspace = true
 futures-util.workspace = true
 meilisearch-sdk = "0.27.0"

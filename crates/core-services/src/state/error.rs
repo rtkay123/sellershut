@@ -12,4 +12,8 @@ pub enum StateError {
     #[error(transparent)]
     /// Postgres error
     Postgres(#[from] sqlx::Error),
+    #[cfg(feature = "nats")]
+    #[error(transparent)]
+    /// Nats error
+    Nats(#[from] async_nats::error::Error<async_nats::ConnectErrorKind>),
 }

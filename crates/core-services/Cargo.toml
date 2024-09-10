@@ -28,7 +28,8 @@ cache-write = ["cache"]
 nats = ["dep:async-nats", "serde/derive", "serde_json"]
 postgres = ["sqlx/postgres", "serde/derive"]
 rt-tokio = ["dep:tokio"]
-telemetry = ["tracing", "tracing-loki/compat-0-2-1", "tracing-loki/rustls", "tracing-subscriber/env-filter"]
+tracing = ["dep:tracing", "tracing-subscriber/env-filter"]
+tracing-loki = ["tracing", "tracing-loki/compat-0-2-1", "tracing-loki/rustls"]
 
 [package.metadata.docs.rs]
 all-features = true

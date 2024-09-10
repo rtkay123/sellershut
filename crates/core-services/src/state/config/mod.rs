@@ -12,9 +12,7 @@ pub use postgres::*;
 
 #[cfg(feature = "api")]
 use std::net::{Ipv6Addr, SocketAddr};
-use std::{fmt::Display, str::FromStr, sync::Arc};
-
-pub(crate) type Config = Arc<Configuration>;
+use std::{fmt::Display, str::FromStr};
 
 #[cfg_attr(feature = "postgres", derive(serde::Deserialize))]
 /// Api Configuration
@@ -35,9 +33,12 @@ pub struct Configuration {
     #[cfg(feature = "api")]
     pub query_limit: i32,
     /// Loki URL
+    #[cfg(feature = "tracing-loki")]
     pub loki_url: String,
     #[cfg(feature = "nats")]
     pub nats: NatsConfig,
+    pub crate_name: String,
+    pub crate_version: String,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -52,7 +53,7 @@ pub enum Environment {
 
 impl Configuration {
     /// Creates a new configuration from environment variables.
-    pub fn new() -> Config {
+    pub fn new(crate_name: &str, crate_version: &str) -> Self {
         let env = env_var("APP_ENVIRONMENT")
             .parse::<Environment>()
             .expect("Unable to parse the value of the APP_ENVIRONMENT environment variable. Please make sure it is either \"development\" or \"production\".");
@@ -67,12 +68,13 @@ impl Configuration {
             .parse::<i32>()
             .expect("Max results to return per query");
 
+        #[cfg(feature = "tracing-loki")]
         let loki_url = env_var("LOKI_URL");
 
         #[cfg(feature = "api")]
         let listen_address = SocketAddr::from((Ipv6Addr::UNSPECIFIED, app_port));
 
-        Arc::new(Configuration {
+        Configuration {
             env,
             #[cfg(feature = "api")]
             listen_address,
@@ -97,8 +99,11 @@ impl Configuration {
                     nats_url: env_var("NATS_URL"),
                 }
             },
+            #[cfg(feature = "tracing-loki")]
             loki_url,
-        })
+            crate_name: crate_name.to_string(),
+            crate_version: crate_version.to_string(),
+        }
     }
 
     /// Sets the database DSN.

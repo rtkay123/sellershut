@@ -11,7 +11,7 @@ pub use cluster::RedisClusterConnectionManager;
 use async_trait::async_trait;
 use redis::{FromRedisValue, RedisError, RedisResult, ToRedisArgs};
 
-use crate::state::config::env_var;
+use crate::{state::config::env_var, ServiceError};
 
 #[derive(Clone, Debug)]
 pub enum RedisPool {
@@ -273,7 +273,11 @@ impl PoolLike for ClusteredRedisPool {
     }
 }
 
-pub async fn new_redis_pool_helper() -> RedisPool {
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(target = "core_services::cache")
+)]
+pub async fn new_redis_pool_helper() -> Result<RedisPool, ServiceError> {
     let redis_dsn = env_var("REDIS_DSN");
     let clustered = env_var("REDIS_IS_CLUSTER").to_lowercase() == "true";
     let max_connections = env_var("REDIS_POOL_MAX_CONNECTIONS")
@@ -281,23 +285,20 @@ pub async fn new_redis_pool_helper() -> RedisPool {
         .expect("REDIS_POOL_MAX_CONNECTIONS to be u32");
 
     if clustered {
-        let mgr = RedisClusterConnectionManager::new(redis_dsn)
-            .expect("Error initializing redis cluster client");
+        let mgr = RedisClusterConnectionManager::new(redis_dsn)?;
         let pool = bb8::Pool::builder()
             .max_size(max_connections)
             .build(mgr)
-            .await
-            .expect("Error initializing redis cluster connection pool");
+            .await?;
         let pool = ClusteredRedisPool { pool };
-        RedisPool::Clustered(pool)
+        Ok(RedisPool::Clustered(pool))
     } else {
-        let mgr = RedisConnectionManager::new(redis_dsn).expect("Error intializing redis client");
+        let mgr = RedisConnectionManager::new(redis_dsn)?;
         let pool = bb8::Pool::builder()
-            .max_size(max_connections.into())
+            .max_size(max_connections)
             .build(mgr)
-            .await
-            .expect("Error initializing redis connection pool");
+            .await?;
         let pool = NonClusteredRedisPool { pool };
-        RedisPool::NonClustered(pool)
+        Ok(RedisPool::NonClustered(pool))
     }
 }

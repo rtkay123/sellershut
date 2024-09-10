@@ -1,10 +1,14 @@
 mod database;
 
-use std::{path::Path, str::FromStr};
+use std::str::FromStr;
 
 use async_nats::jetstream::stream;
-use core_services::state::{config::env_var, events::Entity, ServiceState};
-use tracing::error;
+use core_services::state::{
+    config::{env_var, Configuration},
+    events::Entity,
+    ServiceState,
+};
+use tracing::{error, instrument};
 
 #[derive(Clone)]
 pub struct ApiState {
@@ -12,11 +16,9 @@ pub struct ApiState {
 }
 
 impl ApiState {
-    pub async fn initialise() -> anyhow::Result<Self> {
-        let man_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(".env");
-        dotenvy::from_path(man_path).ok();
-
-        let state = ServiceState::initialise(env!("CARGO_CRATE_NAME")).await?;
+    #[instrument(skip(config))]
+    pub async fn initialise(config: Configuration) -> anyhow::Result<Self> {
+        let state = ServiceState::initialise(config).await?;
 
         let stream = env_var("JETSTREAM_NAME");
         let subjects: Vec<_> = env_var("JETSTREAM_SUBJECTS")

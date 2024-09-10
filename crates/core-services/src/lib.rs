@@ -6,10 +6,10 @@
 )]
 
 //! sellershut API utilities
-#[cfg(feature = "telemetry")]
-#[cfg_attr(docsrs, doc(cfg(feature = "telemetry")))]
-/// Telemetry services
-pub mod telemetry;
+#[cfg(feature = "tracing")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tracing")))]
+/// Tracing services
+pub mod tracing;
 
 /// State
 #[cfg_attr(
@@ -28,12 +28,16 @@ use thiserror::Error;
 /// Errors returned by services
 #[derive(Error, Debug)]
 pub enum ServiceError {
-    #[cfg(feature = "telemetry")]
+    #[cfg(feature = "tracing-loki")]
     #[error(transparent)]
     /// When creating the tracing layer
     Loki(#[from] tracing_loki::Error),
-    #[cfg(feature = "telemetry")]
+    #[cfg(feature = "tracing-loki")]
     #[error(transparent)]
     /// When parsing url
     LokiUrl(#[from] tracing_loki::url::ParseError),
+    #[cfg(feature = "cache")]
+    #[error(transparent)]
+    /// When creating the tracing layer
+    Cache(#[from] redis::RedisError),
 }
