@@ -7,7 +7,13 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use async_nats::jetstream::{consumer, stream};
-use core_services::state::config::env_var;
+use core_services::{
+    state::config::{env_var, Configuration},
+    tracing::{
+        config::{AppMetadata, LokiConfig},
+        TelemetryBuilder,
+    },
+};
 use futures_util::{
     future::{join_all, try_join_all},
     StreamExt, TryFutureExt,
@@ -19,7 +25,30 @@ use tracing::{debug, error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let state = Arc::new(ApiState::initialise().await?);
+    let man_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(".env");
+    dotenvy::from_path(man_path).ok();
+
+    let crate_name = env!("CARGO_CRATE_NAME");
+    let crate_version = env!("CARGO_PKG_VERSION");
+
+    let config = Configuration::new(crate_name, crate_version);
+    let metadata = AppMetadata {
+        name: crate_name,
+        version: crate_version,
+        env: config.env,
+    };
+
+    let mut telemetry = TelemetryBuilder::new()
+        .try_with_loki(LokiConfig::new(metadata, &config.loki_url))?
+        .try_with_opentelemetry(metadata, &config.otel_collector)?
+        .try_with_sentry(&config.sentry_dsn)?
+        .build();
+
+    if let Some(task) = std::mem::take(&mut telemetry.loki_task) {
+        tokio::spawn(task);
+    };
+
+    let state = Arc::new(ApiState::initialise(config).await?);
 
     let addr = state.state.config.listen_address;
 

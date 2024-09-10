@@ -1,24 +1,32 @@
+/// Config for services
 pub mod config;
 
 #[cfg(feature = "tracing-loki")]
 use config::LokiConfig;
+
 use tracing_subscriber::{
     layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer, Registry,
 };
 
+/// Telemetry handle
+#[allow(missing_debug_implementations)]
 pub struct Telemetry {
     #[cfg(feature = "tracing-loki")]
-    pub loki_handle: Option<tracing_loki::BackgroundTask>,
+    /// Loki [tracing_loki::BackgroundTask]
+    pub loki_task: Option<tracing_loki::BackgroundTask>,
     #[cfg(feature = "sentry")]
-    sentry_guard: Option<sentry::ClientInitGuard>,
+    _sentry_guard: Option<sentry::ClientInitGuard>,
 }
 
 impl Telemetry {
+    /// Create a new builder
     pub fn builder() -> TelemetryBuilder {
         TelemetryBuilder::default()
     }
 }
 
+/// A builder for initialising [tracing] layers
+#[allow(missing_debug_implementations)]
 pub struct TelemetryBuilder {
     layer: Vec<Box<dyn Layer<Registry> + Sync + Send>>,
     #[cfg(feature = "tracing-loki")]
@@ -34,6 +42,7 @@ impl Default for TelemetryBuilder {
 }
 
 impl TelemetryBuilder {
+    /// Create a new builder
     pub fn new() -> Self {
         let types: Box<dyn Layer<Registry> + Sync + Send> =
             tracing_subscriber::fmt::layer().boxed();
@@ -47,6 +56,7 @@ impl TelemetryBuilder {
     }
 
     #[cfg(feature = "tracing-loki")]
+    /// Adds loki
     pub fn try_with_loki(mut self, config: LokiConfig) -> Result<Self, crate::ServiceError> {
         let mut builder = tracing_loki::builder();
         for (key, value) in config.labels.iter() {
@@ -66,9 +76,9 @@ impl TelemetryBuilder {
     }
 
     #[cfg(feature = "sentry")]
+    /// Adds loki
     pub fn try_with_sentry(mut self, dsn: &str) -> Result<Self, crate::ServiceError> {
         use sentry::{ClientOptions, IntoDsn};
-        println!("dsn={dsn}");
 
         let guard = sentry::init(ClientOptions {
             dsn: dsn.into_dsn()?,
@@ -84,6 +94,7 @@ impl TelemetryBuilder {
     }
 
     #[cfg(feature = "opentelemetry")]
+    /// Adds opentelemetry
     pub fn try_with_opentelemetry(
         mut self,
         config: config::AppMetadata,
@@ -142,6 +153,7 @@ impl TelemetryBuilder {
         Ok(self)
     }
 
+    /// Initialises tracing
     pub fn build(self) -> Telemetry {
         tracing_subscriber::registry()
             .with(self.layer)
@@ -149,9 +161,9 @@ impl TelemetryBuilder {
             .init();
         Telemetry {
             #[cfg(feature = "tracing-loki")]
-            loki_handle: self.loki_handle,
+            loki_task: self.loki_handle,
             #[cfg(feature = "sentry")]
-            sentry_guard: self.sentry_guard,
+            _sentry_guard: self.sentry_guard,
         }
     }
 }

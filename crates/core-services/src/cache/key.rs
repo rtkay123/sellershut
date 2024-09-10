@@ -21,10 +21,7 @@ impl Display for CursorParams<'_> {
         write!(
             f,
             "cursor={}:index={}",
-            match self.cursor {
-                Some(cursor) => cursor,
-                None => "[NONE]",
-            },
+            self.cursor.unwrap_or("[NONE]"),
             match self.index {
                 Index::First(v) => format!("first:{v}"),
                 Index::Last(v) => format!("last:{v}"),
@@ -45,9 +42,9 @@ impl Display for CacheKey<'_> {
             f,
             "{}",
             match self {
-                CacheKey::Categories(params) => format!("categories:all:{}", params.to_string()),
+                CacheKey::Categories(params) => format!("categories:all:{params}"),
                 CacheKey::CategoriesSubCategory(params) =>
-                    format!("categories:subcategories:{}", params.to_string()),
+                    format!("categories:subcategories:{params}"),
                 CacheKey::Category(id) => format!("categories:id={id}"),
             }
         )

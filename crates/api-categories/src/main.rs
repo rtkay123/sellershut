@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
         .try_with_sentry(&config.sentry_dsn)?
         .build();
 
-    if let Some(task) = std::mem::take(&mut telemetry.loki_handle) {
+    if let Some(task) = std::mem::take(&mut telemetry.loki_task) {
         tokio::spawn(task);
     };
 

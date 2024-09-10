@@ -25,12 +25,15 @@ pub struct ServiceState {
     /// App configuration
     pub config: std::sync::Arc<Configuration>,
     #[cfg(feature = "postgres")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
     /// Postgres connection pool
     pub db_pool: PgPool,
     #[cfg(feature = "cache")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
     /// Cache
     pub cache: RedisPool,
     #[cfg(feature = "nats")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "nats")))]
     /// Jetstream context
     pub jetstream_context: Context,
 }
@@ -57,7 +60,7 @@ impl ServiceState {
 
         #[cfg(feature = "nats")]
         let client = {
-            let client = async_nats::connect(&config.nats.nats_url);
+            let client = async_nats::connect(&config.nats_url);
 
             #[cfg(feature = "tracing")]
             let client =

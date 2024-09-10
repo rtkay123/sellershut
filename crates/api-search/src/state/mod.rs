@@ -1,11 +1,13 @@
 use anyhow::Result;
 use sellershut_core::categories::query_categories_client::QueryCategoriesClient;
-use std::path::Path;
 use tokio::task::JoinHandle;
 
 use meilisearch_sdk::client::Client;
 
-use core_services::state::{config::env_var, ServiceState};
+use core_services::state::{
+    config::{env_var, Configuration},
+    ServiceState,
+};
 
 pub struct ApiState {
     pub state: ServiceState,
@@ -19,11 +21,8 @@ pub struct ApiState {
 }
 
 impl ApiState {
-    pub async fn initialise() -> Result<Self> {
-        let man_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(".env");
-        dotenvy::from_path(man_path).ok();
-
-        let state = ServiceState::initialise(env!("CARGO_CRATE_NAME")).await?;
+    pub async fn initialise(config: Configuration) -> Result<Self> {
+        let state = ServiceState::initialise(config).await?;
 
         #[cfg(feature = "nlp")]
         let (handle, classifier) = crate::nlp::ZeroshotClassifier::spawn();

@@ -12,13 +12,26 @@
 pub mod tracing;
 
 /// State
+#[cfg(any(
+    feature = "api",
+    feature = "postgres",
+    feature = "cache",
+    feature = "nats",
+    feature = "tracing",
+))]
 #[cfg_attr(
     docsrs,
-    doc(cfg(any(feature = "meilisearch", feature = "postgres", feature = "cache")))
+    doc(cfg(any(
+        feature = "api",
+        feature = "postgres",
+        feature = "cache",
+        feature = "nats",
+        feature = "tracing",
+    )))
 )]
 pub mod state;
 
-/// State
+/// Cache
 #[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 #[cfg(feature = "cache")]
 pub mod cache;

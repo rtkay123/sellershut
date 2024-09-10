@@ -1,13 +1,15 @@
-#[cfg(feature = "nats")]
-mod nats;
-
-#[cfg(feature = "nats")]
-pub use nats::*;
+// #[cfg(feature = "nats")]
+// mod nats;
+//
+// #[cfg(feature = "nats")]
+// #[cfg_attr(docsrs, doc(cfg(feature = "nats")))]
+// pub use nats::*;
 
 #[cfg(feature = "postgres")]
 mod postgres;
 
 #[cfg(feature = "postgres")]
+#[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
 pub use postgres::*;
 
 #[cfg(feature = "api")]
@@ -22,30 +24,39 @@ pub struct Configuration {
     pub env: Environment,
     /// The address to listen on.
     #[cfg(feature = "api")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "api")))]
     pub listen_address: SocketAddr,
     /// The port to listen on.
     #[cfg(feature = "api")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "api")))]
     pub app_port: u16,
     /// Postgres Config
     #[cfg(feature = "postgres")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "postgres")))]
     pub postgres: PostgresConfig,
     /// Query limit
     #[cfg(feature = "api")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "api")))]
     pub query_limit: i32,
     /// Loki URL
     #[cfg(feature = "tracing-loki")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "tracing-loki")))]
     pub loki_url: String,
     #[cfg(feature = "nats")]
-    /// Nats config
-    pub nats: NatsConfig,
+    #[cfg_attr(docsrs, doc(cfg(feature = "nats")))]
+    /// Nats Url
+    pub nats_url: String,
     /// Pkg name
     pub pkg_name: String,
     /// Package version
     pub pkg_version: String,
     /// Package version
     #[cfg(feature = "opentelemetry")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "opentelemetry")))]
     pub otel_collector: String,
     #[cfg(feature = "sentry")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sentry")))]
+    /// Sentry dsn
     pub sentry_dsn: String,
 }
 
@@ -94,6 +105,8 @@ impl Configuration {
             listen_address,
             #[cfg(feature = "api")]
             app_port,
+            #[cfg(feature = "nats")]
+            nats_url: env_var("NATS_URL"),
             #[cfg(feature = "postgres")]
             postgres: {
                 let db_pool_max_size = env_var("DATABASE_POOL_MAX_SIZE")
@@ -107,12 +120,6 @@ impl Configuration {
             },
             #[cfg(feature = "api")]
             query_limit,
-            #[cfg(feature = "nats")]
-            nats: {
-                NatsConfig {
-                    nats_url: env_var("NATS_URL"),
-                }
-            },
             #[cfg(feature = "tracing-loki")]
             loki_url,
             pkg_name: crate_name.to_string(),

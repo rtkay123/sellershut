@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, missing_debug_implementations)]
 // https://github.com/svix/svix-webhooks/blob/main/server/svix-server/src/redis/mod.rs
 mod cluster;
 
