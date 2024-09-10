@@ -19,7 +19,10 @@ use tracing::{debug, info_span, instrument, trace, warn, Instrument};
 
 use crate::{
     api::entity::{self, to_offset_datetime},
-    state::{database::map_err, ApiState},
+    state::{
+        database::{map_err, publish_event},
+        ApiState,
+    },
 };
 
 #[tonic::async_trait]
@@ -260,17 +263,11 @@ impl QueryCategories for ApiState {
             let payload = CacheCategoriesConnectionRequest {
                 connection: Some(connection.clone()),
                 pagination: Some(pagination),
-            }
-            .encode_to_vec();
+            };
 
-            let event = Event::UpdateBatch(Entity::Categories).to_string();
+            let event = Event::UpdateBatch(Entity::Categories);
 
-            let _ = self
-                .state
-                .jetstream_context
-                .publish(event, payload.into())
-                .await;
-            debug!("message published");
+            publish_event(payload, event, &self.state.jetstream_context).await?;
         }
 
         Ok(tonic::Response::new(connection))
@@ -324,17 +321,9 @@ impl QueryCategories for ApiState {
                 // update cache
                 let category = Category::from(category);
 
-                let buf = category.encode_to_vec();
+                let event = Event::UpdateSingle(Entity::Categories);
 
-                let event = Event::UpdateSingle(Entity::Categories).to_string();
-
-                let _ = self
-                    .state
-                    .jetstream_context
-                    .publish(event, buf.into())
-                    .await;
-                debug!("message published");
-
+                publish_event(category.clone(), event, &self.state.jetstream_context).await?;
                 category
             }
         };
@@ -592,17 +581,11 @@ impl QueryCategories for ApiState {
             let payload = CacheCategoriesConnectionRequest {
                 connection: Some(connection.clone()),
                 pagination: Some(pagination),
-            }
-            .encode_to_vec();
+            };
 
-            let event = Event::UpdateBatch(Entity::Categories).to_string();
+            let event = Event::UpdateBatch(Entity::Categories);
 
-            let _ = self
-                .state
-                .jetstream_context
-                .publish(event, payload.into())
-                .await;
-            debug!("message published");
+            publish_event(payload, event, &self.state.jetstream_context).await?;
         }
 
         Ok(tonic::Response::new(connection))

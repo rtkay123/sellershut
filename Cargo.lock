@@ -84,6 +84,7 @@ dependencies = [
  "dotenvy",
  "fake",
  "futures-util",
+ "opentelemetry",
  "prost 0.13.2",
  "reqwest 0.12.7",
  "sellershut-core",
@@ -97,6 +98,7 @@ dependencies = [
  "tonic-reflection",
  "tower 0.5.1",
  "tracing",
+ "tracing-opentelemetry",
 ]
 
 [[package]]
@@ -490,10 +492,13 @@ dependencies = [
  "core-services",
  "dotenvy",
  "futures-util",
+ "opentelemetry",
  "prost 0.13.2",
  "sellershut-core",
+ "sentry",
  "tokio",
  "tracing",
+ "tracing-opentelemetry",
 ]
 
 [[package]]

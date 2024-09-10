@@ -1,5 +1,4 @@
 use core_services::state::events::{Entity, Event};
-use prost::Message;
 use sellershut_core::{
     categories::{
         mutate_categories_server::MutateCategories, Category, CategoryEvent, DeleteCategoryRequest,
@@ -10,7 +9,10 @@ use sellershut_core::{
 };
 use tracing::debug;
 
-use crate::{api::entity, state::ApiState};
+use crate::{
+    api::entity,
+    state::{database::publish_event, ApiState},
+};
 
 use super::map_err;
 
@@ -48,17 +50,9 @@ impl MutateCategories for ApiState {
             event: CategoryEvent::Create.into(),
         };
 
-        let mut buf = Vec::new();
-        req.encode(&mut buf).map_err(map_err)?;
+        let event = Event::SetSingle(Entity::Categories);
 
-        let event = Event::SetSingle(Entity::Categories).to_string();
-
-        let _ = self
-            .state
-            .jetstream_context
-            .publish(event, buf.into())
-            .await;
-        debug!("message published");
+        publish_event(req, event, &self.state.jetstream_context).await?;
 
         Ok(tonic::Response::new(category))
     }
@@ -88,16 +82,8 @@ impl MutateCategories for ApiState {
 
         let category = Category::from(category);
 
-        let buf = category.encode_to_vec();
-
-        let event = Event::UpdateSingle(Entity::Categories).to_string();
-
-        let _ = self
-            .state
-            .jetstream_context
-            .publish(event, buf.into())
-            .await;
-        debug!("message published");
+        let event = Event::UpdateSingle(Entity::Categories);
+        publish_event(category.clone(), event, &self.state.jetstream_context).await?;
 
         Ok(tonic::Response::new(category))
     }
@@ -117,10 +103,9 @@ impl MutateCategories for ApiState {
             .map_err(map_err)?;
         debug!("row deleted");
 
-        let event = Event::DeleteSingle(Entity::Categories).to_string();
+        let event = Event::DeleteSingle(Entity::Categories);
 
-        let _ = self.state.jetstream_context.publish(event, id.into()).await;
-        debug!("message published");
+        publish_event(Empty::default(), event, &self.state.jetstream_context).await?;
 
         Ok(tonic::Response::new(Empty::default()))
     }

@@ -7,6 +7,10 @@ pub mod error;
 /// Events
 pub mod events;
 
+/// Utils
+#[cfg(all(feature = "opentelemetry", feature = "nats"))]
+pub mod utils;
+
 #[cfg(feature = "nats")]
 use async_nats::jetstream::Context;
 

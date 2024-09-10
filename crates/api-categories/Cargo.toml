@@ -15,6 +15,7 @@ axum.workspace = true
 core-services = { workspace = true, features = ["api", "cache", "nats", "opentelemetry", "postgres", "tracing-loki", "sentry"] }
 dotenvy.workspace = true
 futures-util.workspace = true
+opentelemetry.workspace = true
 prost.workspace = true
 sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde", "tracing"] }
 sentry = { workspace = true, features = ["tower", "tower-http", "rustls", "reqwest"] }
@@ -27,6 +28,7 @@ tonic.workspace = true
 tonic-reflection.workspace = true
 tower = { workspace = true, features = ["make", "steer", "util"] }
 tracing.workspace = true
+tracing-opentelemetry.workspace = true
 
 [dev-dependencies]
 fake = { workspace = true, features = ["derive", "time"] }

@@ -1,6 +1,6 @@
 mod state;
 
-use std::{path::Path, str::FromStr};
+use std::{collections::HashMap, path::Path, str::FromStr};
 
 use anyhow::{anyhow, Result};
 use async_nats::jetstream::{consumer, stream};
@@ -12,6 +12,7 @@ use core_services::{
     state::{
         config::{env_var, Configuration},
         events::{Entity, Event},
+        utils::NatsMetadataExtractor,
         ServiceState,
     },
     tracing::{
@@ -23,13 +24,15 @@ use futures_util::{
     future::{join_all, try_join_all},
     StreamExt, TryFutureExt,
 };
+use opentelemetry::global;
 use prost::Message;
 use sellershut_core::{
     categories::{CacheCategoriesConnectionRequest, Category},
     common::pagination::{cursor::cursor_value::CursorType, Cursor},
 };
 use state::ApiState;
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn, Span};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -144,6 +147,13 @@ async fn process_event(
     message: async_nats::jetstream::Message,
 ) -> anyhow::Result<()> {
     let payload = message.payload.as_ref();
+    if let Some(ref headers) = message.headers {
+        let parent_context = global::get_text_map_propagator(|propagator| {
+            let extractor = NatsMetadataExtractor(headers);
+            propagator.extract(&extractor)
+        });
+        Span::current().set_parent(parent_context);
+    }
 
     match event {
         Event::SetSingle(entity) => match entity {
