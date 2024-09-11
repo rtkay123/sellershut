@@ -121,12 +121,13 @@ async fn handle_message(
     info!("consumer is ready to receive messages");
 
     while let Some(Ok(message)) = messages.next().await {
+        debug!("message received");
         let subject = message.subject.to_string();
 
         match Event::from_str(&subject) {
             Ok(event) => {
                 let _ = process_event(event, &state.0, message).await;
-                trace!(event = ?event, "event processed");
+                info!(event = ?event, "event processed");
             }
             Err(_) => {
                 warn!(
@@ -245,7 +246,8 @@ async fn process_event(
     }
 
     if let Some(transaction) = transaction {
-        transaction.finish()
+        transaction.finish();
+        trace!("finishing sentry transaction");
     }
 
     Ok(())

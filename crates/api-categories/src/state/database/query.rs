@@ -15,7 +15,7 @@ use sellershut_core::{
     common::pagination::{self, cursor::cursor_value::CursorType, Cursor, CursorBuilder, PageInfo},
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
-use tracing::{debug, debug_span, info_span, instrument, trace, warn, Instrument, Level};
+use tracing::{debug, debug_span, info_span, instrument, trace, Instrument, Level};
 
 use crate::{
     api::entity::{self, to_offset_datetime},

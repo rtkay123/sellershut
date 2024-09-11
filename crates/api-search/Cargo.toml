@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
+publish = false
 
 [dependencies]
 anyhow.workspace = true
@@ -13,12 +14,18 @@ core-services = { workspace = true, features = ["api", "nats", "opentelemetry", 
 dotenvy.workspace = true
 futures-util.workspace = true
 meilisearch-sdk = "0.27.0"
-rust-bert = { version = "0.22.0", optional = true }
+opentelemetry.workspace = true
+opentelemetry-http.workspace = true
+rust-bert = { version = "0.22.0", optional = true, default-features = false }
 sellershut-core = { workspace = true, features = ["rpc-client-categories", "serde"] }
+sentry = { workspace = true, features = ["tower", "tower-http", "rustls", "reqwest"] }
+tch = { version = "0.14.0", optional = true, default-features = false }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
+tower-http = { workspace = true, features = ["trace"] }
 tracing.workspace = true
+tracing-opentelemetry.workspace = true
 
 [features]
 default = ["nlp"]
-nlp = ["dep:rust-bert"]
+nlp = ["dep:rust-bert", "dep:tch"]

@@ -4,7 +4,7 @@ use async_nats::{jetstream::Context, HeaderMap, HeaderValue};
 use core_services::state::{events::Event, utils::NatsMetadataInjector};
 use opentelemetry::global;
 use prost::Message;
-use tracing::{debug, instrument, Span};
+use tracing::{debug_span, instrument, trace, Instrument, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub mod mutation;
@@ -27,10 +27,12 @@ async fn publish_event(
 
     global::get_text_map_propagator(|propagator| {
         let context = Span::current().context();
+        trace!("injecting opentelemetry context");
         propagator.inject_context(&context, &mut NatsMetadataInjector(&mut headers))
     });
 
     if let Some(span) = sentry::configure_scope(|scope| scope.get_span()) {
+        trace!("updating sentry headers");
         for (k, v) in span.iter_headers() {
             let value = HeaderValue::from(v.as_str());
             headers.insert(k, value);
@@ -39,10 +41,11 @@ async fn publish_event(
 
     jetstream
         .publish_with_headers(event, headers, buf.into())
+        .instrument(debug_span!("jetstream.publish"))
         .await
         .map_err(map_err)?;
 
-    debug!("message published");
+    trace!("message published");
 
     Ok(())
 }

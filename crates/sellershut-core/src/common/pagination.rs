@@ -61,7 +61,6 @@ impl CursorBuilder {
 
     /// encode a cursor
     pub fn encode(&self) -> String {
-        #[cfg(feature = "tracing")]
         BASE64_URL_SAFE_NO_PAD.encode(format!("{}|{}", self.dt, self.id))
     }
 
