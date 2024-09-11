@@ -1,1 +1,2 @@
+/// protobuf
 pub mod protobuf;

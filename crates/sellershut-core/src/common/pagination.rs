@@ -30,13 +30,9 @@ impl CursorBuilder {
             cursor::cursor_value::CursorType::Before(cursor) => cursor,
         };
 
-        #[cfg(feature = "tracing")]
-        tracing::trace!("decoding cursor");
         let bytes = BASE64_URL_SAFE_NO_PAD.decode(cursor)?;
 
         let decoded = String::from_utf8(bytes)?;
-        #[cfg(feature = "tracing")]
-        tracing::debug!(tokens = decoded, "cursor decoded");
 
         let mut tokens = decoded.split('|');
         if let (Some(dt), Some(id)) = (tokens.next(), tokens.next()) {
@@ -100,9 +96,6 @@ impl CursorBuilder {
 
 /// Gets maximum query results from pagination data
 pub fn query_count(max: i32, pagination: &Index) -> i32 {
-    #[cfg(feature = "tracing")]
-    tracing::trace!("determing items to return");
-
     let user_param = match pagination {
         Index::First(value) => value,
         Index::Last(value) => value,

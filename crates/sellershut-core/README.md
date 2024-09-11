@@ -18,13 +18,22 @@ These features are related to the types and functionalities used by the [Categor
 - **`rpc-server-categories`**: Generates a gRPC server implementations
     - Enables the `categories` feature
 
+### User Features
+
+These features are related to the types and functionalities used by the [Users API](../api-users):
+
+- **`users`**: Enables the `Users`, `Session` and `Account` as well as types related to it used in pagination
+- **`rpc-client-users`**: Generates a gRPC client implementations
+    - Enables the `users` feature
+- **`rpc-server-users`**: Generates a gRPC server implementations
+    - Enables the `users` feature
+
 ### Common Features
 
 These features are used across multiple microservices or provide utility functions:
 
 - **`serde`**: Derives `serde::Deserialize` and `serde::Serialize` for types
 - **`id-gen`**: Exposes a function to generate a nano ID
-- **`tracing`**: Enable structured and context-aware logging
 
 ## Usage
 

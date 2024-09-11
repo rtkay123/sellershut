@@ -1,0 +1,10 @@
+[package]
+name = "api-users"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-users", "rpc-server-users", "serde"] }

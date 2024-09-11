@@ -18,7 +18,7 @@ futures-util.workspace = true
 opentelemetry.workspace = true
 opentelemetry-http.workspace = true
 prost.workspace = true
-sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde", "tracing"] }
+sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde"] }
 sentry = { workspace = true, features = ["tower", "tower-http", "rustls", "reqwest"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

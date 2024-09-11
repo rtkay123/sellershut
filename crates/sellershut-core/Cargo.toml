@@ -12,16 +12,17 @@ prost = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 tonic = { workspace = true, optional = true }
 tonic-types = { workspace = true, optional = true }
-tracing = { workspace = true, optional = true }
 
 [features]
 default = []
 categories = ["dep:tonic", "dep:prost"]
+users  = ["dep:tonic", "dep:prost"]
 id-gen = ["dep:nanoid"]
 rpc-client-categories = ["categories", "dep:tonic-types"]
 rpc-server-categories = ["categories", "dep:base64", "dep:tonic-types"]
+rpc-client-users = ["users", "dep:tonic-types"]
+rpc-server-users = ["users", "dep:base64", "dep:tonic-types"]
 serde = ["dep:serde", "serde/derive"]
-tracing = ["dep:tracing"]
 
 [build-dependencies]
 tonic-build = { version = "0.12.1", features = ["cleanup-markdown"] }

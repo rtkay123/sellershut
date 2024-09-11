@@ -14,8 +14,8 @@ message Category {
   repeated string sub_categories = 3; // A list of sub categories of this current category
   optional string image_url = 4; // An optional image denoting this category
   optional string parent_id = 5; // The direct parent of this category (if applicable)
-  google.protobuf.Timestamp created_at = 6; // Timestamp (millisecond precision) indicating when this category was created
-  google.protobuf.Timestamp updated_at = 7; // Timestamp (millisecond precision) indicating when this category was last updated
+  google.protobuf.Timestamp created_at = 6; // Timestamp indicating when this category was created
+  google.protobuf.Timestamp updated_at = 7; // Timestamp indicating when this category was last updated
 }
 
 // A response node
@@ -57,9 +57,13 @@ message GetSubCategoriesRequest {
   common.pagination.Cursor pagination = 2; // Pagination Properties
 }
 
+// Category events
 enum CategoryEvent {
+  // Created
   CREATE = 0;
+  // Updated
   UPDATE = 1;
+  // Deleted
   DELETE = 2;
 }
 

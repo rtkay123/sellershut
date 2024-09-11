@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package users;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// User
+message User {
+  string id = 1; // A unique identifier
+  string username = 2; // A user's username
+  string email = 3; // A user's email address
+  optional string name = 4; // A user's display name
+  optional string avatar = 5; // A link to a user's profile picture
+  google.protobuf.Timestamp created_at = 6; // Timestamp indicating when this user was created
+  google.protobuf.Timestamp updated_at = 7; // Timestamp indicating when this user was last updated
+}
+
+// Account
+message Account {
+  string provider = 1; // A unique identifier
+  string provider_user_id = 2; // A unique identifier
+  string user_id = 3; // User this session belongs to
+}
+
+// Session
+message Session {
+  string id = 1; // A unique identifier
+  google.protobuf.Timestamp expires_at = 2; // Timestamp indicating when this session expires
+  bool fresh = 3; // Is the session fresh
+  string user_id = 4; // User this session belongs to
+}
