@@ -5,7 +5,8 @@ pub mod state;
 use api::ApiSchemaBuilder;
 use axum::{extract::Request, http::header::CONTENT_TYPE};
 use futures_util::TryFutureExt;
-use opentelemetry::trace::TraceContextExt;
+use opentelemetry::{global, trace::TraceContextExt};
+use opentelemetry_http::HeaderExtractor;
 use routes::router;
 use sellershut_core::categories::{
     mutate_categories_server::MutateCategoriesServer,
@@ -94,7 +95,20 @@ pub async fn run(state: ApiState, tx: oneshot::Sender<u16>) -> anyhow::Result<()
     Ok(())
 }
 
-fn on_request<B>(_request: &Request<B>, span: &Span) {
+fn on_request<B>(request: &Request<B>, span: &Span) {
+    let parent_context = global::get_text_map_propagator(|propagator| {
+        propagator.extract(&HeaderExtractor(request.headers()))
+    });
+    span.set_parent(parent_context);
     let trace_id = span.context().span().span_context().trace_id();
     span.record("trace_id", trace_id.to_string());
 }
+
+// fn intercept<B: Debug>(req: tonic::Request<B>) -> Result<tonic::Request<B>, tonic::Status> {
+//     println!("Intercepting request: {:?}", req);
+//
+//     let parent_context =
+//         global::get_text_map_propagator(|propagator| propagator.extract(&extractor));
+//
+//     Ok(req)
+// }

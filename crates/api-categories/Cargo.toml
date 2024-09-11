@@ -16,6 +16,7 @@ core-services = { workspace = true, features = ["api", "cache", "nats", "opentel
 dotenvy.workspace = true
 futures-util.workspace = true
 opentelemetry.workspace = true
+opentelemetry-http.workspace = true
 prost.workspace = true
 sellershut-core = { workspace = true, features = ["id-gen", "rpc-client-categories", "rpc-server-categories", "serde", "tracing"] }
 sentry = { workspace = true, features = ["tower", "tower-http", "rustls", "reqwest"] }

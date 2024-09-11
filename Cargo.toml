@@ -15,6 +15,7 @@ sellershut-core = { path = "crates/sellershut-core" }
 core-services = { path = "crates/core-services" }
 futures-util = "0.3.30"
 opentelemetry = "0.25.0"
+opentelemetry-http = "0.25.0"
 reqwest = "0.12.7"
 sentry = { version = "0.34.0", default-features = false }
 serde = "1.0.209"
